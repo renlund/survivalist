@@ -23,7 +23,7 @@ NULL
 ##'     the smallest time is 1, else 0.
 ##' @export
 combine_surv <- function(surv, data, id = NULL, nm = surv_nm("Combined"),
-                          strip = TRUE){
+                         strip = TRUE){
     properties(surv, class = c("NULL", "character", "list"))
     properties(data, class = "data.frame")
     properties(id, class = c("NULL", "character"), length = 0:1, na.ok = FALSE)
@@ -33,7 +33,8 @@ combine_surv <- function(surv, data, id = NULL, nm = surv_nm("Combined"),
     if(is.character(surv)) surv <- create_slist(s = surv)
     sl <- check_slist(sl = surv, nm = names(data))
     return_dt <- return_data.table(is.data.table(data))
-    if(!is.data.table(data)) data <- as.data.table(data)
+    ## if(!is.data.table(data)) data <- as.data.table(data)
+    data <- as.data.table(data)
     ts <- slist_time(sl)
     es <- slist_event(sl)
     times <- data[, ts, with = FALSE]
@@ -69,7 +70,8 @@ rescale_surv <- function(surv = NULL, data, FUN, id = NULL, strip = TRUE){
     if(is.character(surv)) surv <- create_slist(s = surv)
     sl <- check_slist(sl = surv, nm = names(data))
     return_dt <- return_data.table(is.data.table(data))
-    if(!is.data.table(data)) data <- as.data.table(data)
+    ## if(!is.data.table(data)) data <- as.data.table(data)
+    data <- as.data.table(data)
     ts <- slist_time(sl)
     data[, (ts) := lapply(.SD, FUN), .SDcols = ts]
     r <- if(strip){
@@ -104,7 +106,8 @@ truncate_surv <- function(surv = NULL, data, trunc, id = NULL, strip = TRUE){
     if(is.character(surv)) surv <- create_slist(s = surv)
     sl <- check_slist(sl = surv, nm = names(data))
     return_dt <- return_data.table(is.data.table(data))
-    if(!is.data.table(data)) data <- as.data.table(data)
+    ## if(!is.data.table(data)) data <- as.data.table(data)
+    data <- as.data.table(data)
     ts <- slist_time(sl)
     es <- slist_event(sl)
     for(i in seq_along(ts)){
@@ -125,6 +128,33 @@ truncate_surv <- function(surv = NULL, data, trunc, id = NULL, strip = TRUE){
     if(return_dt) r else as.data.frame(r)
 }
 
+##' @rdname transform_surv
+##' @details Survclass_surv: create variables of class 'Surv'
+##' @export
+Survclass_surv <- function(surv = NULL, data, id = NULL, strip = TRUE){
+    properties(surv, class = c("NULL", "character", "list"))
+    properties(data, class = "data.frame")
+    properties(id, class = c("NULL", "character"), length = 0:1, na.ok = FALSE)
+    properties(strip, class = "logical", length = 1, na.ok = FALSE)
+    if(is.character(id)) inclusion(names(data), nm = "data names", include = id)
+    if(is.null(surv)) surv <- extract_slist_from_names(names(data))
+    if(is.character(surv)) surv <- create_slist(s = surv)
+    sl <- check_slist(sl = surv, nm = names(data))
+    rm <- c(slist_time(sl), slist_event(sl))
+    DATA <- subset(as.data.frame(data), subset = TRUE,
+                   select = setdiff(names(data), rm))
+    for(i in seq_along(sl)){
+        DATA[[names(sl)[i]]] <- survival::Surv(time = data[[sl[[1]][1]]],
+                                               event = data[[sl[[1]][2]]])
+    }
+    if(strip){
+        vs <- c(id, names(sl))
+        DATA[, vs]
+    } else {
+        DATA
+    }
+}
+
 if(FALSE){
 
     data <- data.frame(
@@ -139,6 +169,9 @@ if(FALSE){
     trunc = 8
     id = "the_id"
     strip = FALSE
+
+    Survclass_surv(surv, data)
+    Survclass_surv(surv, data, strip = FALSE)
 
     data <- data.frame(
         id = 1:7,

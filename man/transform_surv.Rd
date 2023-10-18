@@ -5,6 +5,7 @@
 \alias{combine_surv}
 \alias{rescale_surv}
 \alias{truncate_surv}
+\alias{Survclass_surv}
 \title{transform surv variables}
 \usage{
 combine_surv(surv, data, id = NULL, nm = surv_nm("Combined"), strip = TRUE)
@@ -12,6 +13,8 @@ combine_surv(surv, data, id = NULL, nm = surv_nm("Combined"), strip = TRUE)
 rescale_surv(surv = NULL, data, FUN, id = NULL, strip = TRUE)
 
 truncate_surv(surv = NULL, data, trunc, id = NULL, strip = TRUE)
+
+Survclass_surv(surv = NULL, data, id = NULL, strip = TRUE)
 }
 \arguments{
 \item{surv}{specification of surv components}
@@ -45,4 +48,6 @@ the smallest time is 1, else 0.
 rescale_surv: apply function to time component of surv variables
 
 trunacate_surv: truncate surv variables
+
+Survclass_surv: create variables of class 'Surv'
 }

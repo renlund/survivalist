@@ -111,10 +111,10 @@ check_slist <- function(sl, nm){
             warning(s)
         }
     }
-    w <- which(names(sl)[index] == "")
+    w <- if(is.null(names(sl))) seq_along(sl) else which(names(sl)[index] == "")
     if(length(w) != 0){
         m <- paste0("missing surv name in (input) element ", def_nm[index][w],
-                    " has been imputed")
+                    " has been imputed\n")
         names(sl)[index][w] <- slist_event(sl)[index][w]
         warning(m)
     }

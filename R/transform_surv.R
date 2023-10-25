@@ -144,8 +144,8 @@ Survclass_surv <- function(surv = NULL, data, id = NULL, strip = TRUE){
     DATA <- subset(as.data.frame(data), subset = TRUE,
                    select = setdiff(names(data), rm))
     for(i in seq_along(sl)){
-        DATA[[names(sl)[i]]] <- survival::Surv(time = data[[sl[[1]][1]]],
-                                               event = data[[sl[[1]][2]]])
+        DATA[[names(sl)[i]]] <- survival::Surv(time = data[[sl[[i]][1]]],
+                                               event = data[[sl[[i]][2]]])
     }
     if(strip){
         vs <- c(id, names(sl))

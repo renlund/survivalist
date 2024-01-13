@@ -7,7 +7,9 @@ test_that("truncate_surv works", {
         Y_t = c(10,10, 9, 8, 8, 7, 7),
         Y_e = c( 0, 1, 0, 0, 1, 0, 1)
     )
-    sl <- list(c("X_t", "X_e"), c("Y_t", "Y_e"))
+    sl <- data.frame(label = c("S1", "S2"),
+                     time = c("X_t", "Y_t"),
+                     event = c("X_e", "Y_e"))
     ts <- truncate_surv(surv = sl,
                         data = d,
                         trunc = 8,

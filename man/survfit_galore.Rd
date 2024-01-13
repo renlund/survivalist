@@ -4,16 +4,16 @@
 \alias{survfit_galore}
 \title{'survfit' for several outcomes and groups}
 \usage{
-survfit_galore(formula, data, surv = NULL, glist = NULL, ...)
+survfit_galore(formula, data, surv = NULL, gtab = NULL, ...)
 }
 \arguments{
-\item{formula}{formula, only RHS of which is used}
+\item{formula}{formula, of which only the RHS is used}
 
-\item{data}{data}
+\item{data}{data.frame; the data}
 
-\item{surv}{specification of surv components}
+\item{surv}{specification of surv components (NULL, character vector, or stab)}
 
-\item{glist}{a named list of logical indices}
+\item{gtab}{data.frame; a grouping table (gtab)}
 
 \item{...}{other arguments for survfit}
 }
@@ -23,5 +23,5 @@ a data frame
 \description{
 Iterated application of 'survfitted' to all outcomes specificed by 'surv'
 plus an added possibility of adding (possibly overlapping) groups by
-supplying a list of indexes in 'glist'.
+supplying a list of indexes in a grouping table (gtab).
 }

@@ -10,7 +10,9 @@ test_that("rescale_surv works", {
     d <- r
     d$X_t <- 10 * d$X_t
     d$Y_t <- 10 * d$Y_t
-    sl <- list(c("X_t", "X_e"), c("Y_t", "Y_e"))
+    sl <- data.frame(label = c("S1", "S2"),
+                     time = c("X_t", "Y_t"),
+                     event = c("X_e", "Y_e"))
     rs <- rescale_surv(surv = sl,
                        data = d,
                        FUN = function(x) x/10,

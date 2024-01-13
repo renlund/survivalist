@@ -10,7 +10,9 @@ test_that("combine_surv works", {
         Y_t = c(10,10, 9, 8, 7),
         Y_e = c( 0, 1, 0, 0, 1)
     )
-    sl <- list(c("X_t", "X_e"), c("Y_t", "Y_e"))
+    sl <- data.frame(label = c("S1", "S2"),
+                     time = c("X_t", "Y_t"),
+                     event = c("X_e", "Y_e"))
     cs <- combine_surv(surv = sl,
                        data = d,
                        id = "the_id",
@@ -31,9 +33,11 @@ test_that("combine_surv works", {
         Z_t = c(10,10, 9, 9, 8),
         Z_e = c( 0, 1, 1, 0, 1)
     )
-    sl <- list(c("X_t", "X_e"), c("Y_t", "Y_e"), c("Z_t", "Z_e"))
+    sl <- data.frame(label = c("S1", "S2", "S3"),
+                     time = c("X_t", "Y_t", "Z_t"),
+                     event = c("X_e", "Y_e", "Z_e"))
     cs <- combine_surv(surv = sl, data = d, id = "the_id",
-                  nm = c("A", "B"))
+                       nm = c("A", "B"))
     r <- data.frame(
         the_id = 1:5,
         A = c(10,10,9,8,7),

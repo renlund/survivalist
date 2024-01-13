@@ -72,10 +72,10 @@ return_data.table <- function(input.is.data.table = NULL){
     if(is.null(input.is.data.table)){
         input.is.data.table <- FALSE
     }
-    rdt <- options("survivalist.return_data.table")[[1]]
+    rdt <- options("survivalist.return.data.table")[[1]]
     if(!is.null(rdt)){
         if(length(rdt) != 1 || class(rdt) != "logical" || is.na(rdt)){
-            s <- paste0("option 'survivalist.return_data.table' is not ",
+            s <- paste0("option 'survivalist.return.data.table' is not ",
                         "a length 1, non-missing logical and will ",
                         "be ignored")
             warning(s)

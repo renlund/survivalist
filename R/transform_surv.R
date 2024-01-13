@@ -24,31 +24,21 @@ NULL
 ##' @export
 combine_surv <- function(surv, data, id = NULL, nm = surv_nm("Combined"),
                          strip = TRUE){
-    properties(surv, class = c("NULL", "character", "list"))
+    properties(surv, class = c("NULL", "character", "data.frame"))
     properties(data, class = "data.frame")
     properties(id, class = c("NULL", "character"), length = 0:1, na.ok = FALSE)
     if(is.character(id)) inclusion(names(data), nm = "data names", include = id)
     properties(nm, class = "character", length = 2, na.ok = FALSE)
-    if(is.null(surv)) surv <- extract_slist_from_names(names(data))
-    if(is.character(surv)) surv <- create_slist(s = surv)
-    sl <- check_slist(sl = surv, nm = names(data))
+    if(is.null(surv)) surv <- extract_stab_from_names(names(data))
+    if(is.character(surv)) surv <- create_stab(s = surv)
+    stab <- verify_stab(stab = surv, nm = names(data))
     return_dt <- return_data.table(is.data.table(data))
-    ## if(!is.data.table(data)) data <- as.data.table(data)
     data <- as.data.table(data)
-    ts <- slist_time(sl)
-    es <- slist_event(sl)
-    times <- data[, ts, with = FALSE]
-    events <- data[, es, with = FALSE]
+    times <- data[, stab$time, with = FALSE]
+    events <- data[, stab$event, with = FALSE]
     min_t <- do.call(pmin, times)
     max_ev <- as.integer(rowSums((times == min_t) * (events)) > 0)
     data[, (nm) := .(min_t, max_ev)]
-    ## if(!is.null(id)){
-    ##     r <- data.table(data[[id]], min_t, max_ev)
-    ##     setnames(r, new = c(id, nm))
-    ## } else {
-    ##     r <- data.table(min_t, max_ev)
-    ##     setnames(r, new = nm)
-    ## }
     r <- if(strip){
         vs <- c(id, nm)
         data[, vs, with = FALSE]
@@ -60,23 +50,20 @@ combine_surv <- function(surv, data, id = NULL, nm = surv_nm("Combined"),
 ##' @details rescale_surv: apply function to time component of surv variables
 ##' @export
 rescale_surv <- function(surv = NULL, data, FUN, id = NULL, strip = TRUE){
-    properties(surv, class = c("NULL", "character", "list"))
+    properties(surv, class = c("NULL", "character", "data.frame"))
     properties(data, class = "data.frame")
     properties(FUN, class = "function", length = 1)
     properties(id, class = c("NULL", "character"), length = 0:1, na.ok = FALSE)
     properties(strip, class = "logical", length = 1, na.ok = FALSE)
     if(is.character(id)) inclusion(names(data), nm = "data names", include = id)
-    if(is.null(surv)) surv <- extract_slist_from_names(names(data))
-    if(is.character(surv)) surv <- create_slist(s = surv)
-    sl <- check_slist(sl = surv, nm = names(data))
+    if(is.null(surv)) surv <- extract_stab_from_names(names(data))
+    if(is.character(surv)) surv <- create_stab(s = surv)
+    stab <- verify_stab(stab = surv, nm = names(data))
     return_dt <- return_data.table(is.data.table(data))
-    ## if(!is.data.table(data)) data <- as.data.table(data)
     data <- as.data.table(data)
-    ts <- slist_time(sl)
-    data[, (ts) := lapply(.SD, FUN), .SDcols = ts]
+    data[, (stab$time) := lapply(.SD, FUN), .SDcols = stab$time]
     r <- if(strip){
-        es <- slist_event(sl)
-        vs <- c(id, shuffle(ts, es))
+        vs <- c(id, shuffle(stab$time, stab$event))
         data[, vs, with = FALSE]
     } else data
     if(return_dt) r else as.data.frame(r)
@@ -96,33 +83,30 @@ shuffle <- function(x, y){
 ##' @details trunacate_surv: truncate surv variables
 ##' @export
 truncate_surv <- function(surv = NULL, data, trunc, id = NULL, strip = TRUE){
-    properties(surv, class = c("NULL", "character", "list"))
+    properties(surv, class = c("NULL", "character", "data.frame"))
     properties(data, class = "data.frame")
     properties(trunc, class = c("numeric", "integer"), length = 1, na.ok = FALSE)
     properties(id, class = c("NULL", "character"), length = 0:1, na.ok = FALSE)
     properties(strip, class = "logical", length = 1, na.ok = FALSE)
     if(is.character(id)) inclusion(names(data), nm = "data names", include = id)
-    if(is.null(surv)) surv <- extract_slist_from_names(names(data))
-    if(is.character(surv)) surv <- create_slist(s = surv)
-    sl <- check_slist(sl = surv, nm = names(data))
+    if(is.null(surv)) surv <- extract_stab_from_names(names(data))
+    if(is.character(surv)) surv <- create_stab(s = surv)
+    stab <- verify_stab(stab = surv, nm = names(data))
     return_dt <- return_data.table(is.data.table(data))
-    ## if(!is.data.table(data)) data <- as.data.table(data)
     data <- as.data.table(data)
-    ts <- slist_time(sl)
-    es <- slist_event(sl)
-    for(i in seq_along(ts)){
+    for(i in seq_along(stab$time)){
         eval(expr = substitute(
             expr = data[, c(foo_ch, bar_ch) := {
                 .(pmin(foo, trunc), fifelse(bar == 1 & foo <= trunc, 1L, 0L))
             }],
-            env = list(foo_ch = ts[i],
-                       foo = as.name(ts[i]),
-                       bar_ch = es[i],
-                       bar = as.name(es[i]))
+            env = list(foo_ch = stab$time[i],
+                       foo = as.name(stab$time[i]),
+                       bar_ch = stab$event[i],
+                       bar = as.name(stab$event[i]))
         ))
     }
     r <- if(strip){
-        vs <- c(id, shuffle(ts, es))
+        vs <- c(id, shuffle(stab$time, stab$event))
         data[, vs, with = FALSE]
     } else data
     if(return_dt) r else as.data.frame(r)
@@ -132,23 +116,24 @@ truncate_surv <- function(surv = NULL, data, trunc, id = NULL, strip = TRUE){
 ##' @details Survclass_surv: create variables of class 'Surv'
 ##' @export
 Survclass_surv <- function(surv = NULL, data, id = NULL, strip = TRUE){
-    properties(surv, class = c("NULL", "character", "list"))
+    properties(surv, class = c("NULL", "character", "data.frame"))
     properties(data, class = "data.frame")
     properties(id, class = c("NULL", "character"), length = 0:1, na.ok = FALSE)
     properties(strip, class = "logical", length = 1, na.ok = FALSE)
     if(is.character(id)) inclusion(names(data), nm = "data names", include = id)
-    if(is.null(surv)) surv <- extract_slist_from_names(names(data))
-    if(is.character(surv)) surv <- create_slist(s = surv)
-    sl <- check_slist(sl = surv, nm = names(data))
-    rm <- c(slist_time(sl), slist_event(sl))
+    if(is.null(surv)) surv <- extract_stab_from_names(names(data))
+    if(is.character(surv)) surv <- create_stab(s = surv)
+    stab <- verify_stab(stab = surv, nm = names(data))
+    rm <- c(stab$time, stab$event)
     DATA <- subset(as.data.frame(data), subset = TRUE,
                    select = setdiff(names(data), rm))
-    for(i in seq_along(sl)){
-        DATA[[names(sl)[i]]] <- survival::Surv(time = data[[sl[[i]][1]]],
-                                               event = data[[sl[[i]][2]]])
+
+    for(i in seq_along(stab$label)){
+        DATA[[stab$label[i]]] <- survival::Surv(time = data[[stab$time[i]]],
+                                               event = data[[stab$event[i]]])
     }
     if(strip){
-        vs <- c(id, names(sl))
+        vs <- c(id, stab$label)
         DATA[, vs]
     } else {
         DATA
@@ -165,7 +150,9 @@ if(FALSE){
         Y_e = c( 0, 1, 0),
         noise = letters[1:3]
     )
-    surv <- list(c("X_t", "X_e"), c("Y_t", "Y_e"))
+    surv <- data.frame(label = c("theX", "theY"),
+                       time = c("X_t", "Y_t"),
+                       event = c("X_e", "Y_e"))
     trunc = 8
     id = "the_id"
     strip = FALSE
@@ -181,15 +168,27 @@ if(FALSE){
         bar_ev = c(0,0,1,0,1,1,1)
     )
 
-    sl <- list(Foo = c("foo_t", "foo_ev"),
-               Bar = c("bar_t", "bar_ev"))
-    combined_surv(surv = sl,
-                  data = data,
-                  id = "id",
-                  nm = c("Comb_t", "Comb_ev"))
+    surv <- data.frame(label = c("Foo", "Bar"),
+                       time = c("foo_t", "bar_t"),
+                       event = c("foo_ev", "bar_ev"))
+    combine_surv(surv = surv,
+                 data = data,
+                 id = "id",
+                 nm = c("Comb_t", "Comb_ev"))
     as.data.table(data)[, (surv_nm("Comb")) :=(
-                     combined_surv(surv = sl,
+                     combine_surv(surv = surv,
                                    data = .SD)
-                 )]
+    )]
+
+    rescale_surv(surv = surv,
+                 data = data,
+                 FUN = function(x) 10*x,
+                 strip = FALSE)
+
+    truncate_surv(surv = surv,
+                  data = data,
+                  trunc = 8,
+                  strip = FALSE)
+
 
 }

@@ -65,6 +65,40 @@ surv_nm <- function(s){
 }
 
 #' @rdname surv-identifiers
+#' @details check_stab: check a surv-table ('stab'), i.e. if it is a data.frame
+#'     with variables 'label', 'time' and 'event' and, optionally, if the time
+#'     and event component specified exist in 'nm' (typically the names of some
+#'     data set)
+#' @export
+check_stab <- function(stab, nm = NULL){
+    properties(stab, class = "data.frame")
+    inclusion(names(stab), nm = "names of stab",
+              include = c("label", "time", "event"))
+    if(is.null(nm)){
+        stab
+    } else {
+        lost_times <- which( !(stab$time %in% nm) )
+        lost_events <- which( !(stab$events %in% nm) )
+        if(length(lost_times) > 0){
+            s <- paste0("one or more time components (",
+                        paste0(stab$time[lost_times], collapse = ", "),
+                        ") are missing\n")
+            warning(s)
+        }
+        if(length(lost_events) > 0){
+            s <- paste0("one or more event components (",
+                        paste0(stab$time[lost_events], collapse = ", "),
+                        ") are missing\n")
+            warning(s)
+        }
+        keep <- setdiff(x = 1:nrow(stab),
+                        y = c(lost_times, lost_events))
+        stab[keep,]
+    }
+}
+
+
+#' @rdname surv-identifiers
 #' @details slist_time: extract time component names from surv-list
 #' @export
 slist_time <- function(sl){
@@ -123,7 +157,7 @@ check_slist <- function(sl, nm){
 
 #' @rdname surv-identifiers
 #' @details surv_search_string: create the search string to find the time and
-#'     event components (if systemtatically named accoriding to defaults).
+#'     event components (if systematically named accoriding to defaults).
 #' @export
 surv_search_string <- function(){
     prefix = get_or_test_prefix()

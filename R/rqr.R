@@ -68,11 +68,12 @@ avoidance <- function(x, nm = NULL, avoid){
 #-# @param x the object
 #-# @param nm name of object
 #-# @param set the set that must contain x
-one_of <- function(x, nm, set){
+one_of <- function(x, nm = NULL, set){
     if(is.null(nm)) nm <- paste0(as.character(substitute(x)), collapse = " ")
-    if(length(x) != 1 | x %in% set){
+    if(length(x) != 1 | !(x %in% set)){
         s <- sprintf("\n%s should be exactly one of {%s}",
                      nm, paste0(set, collapse= ", "))
+        stop(s)
     }
 }
 
@@ -94,7 +95,7 @@ renaming_key <- function(x, nm = NULL, avoid, prefix = '.', suffix = NULL,
     x.org <- x
     rename <- which(x %in% avoid)
     if(length(rename) == 0){
-        invisible(TRUE)
+        invisible(NULL)
     } else {
         if(verbose){
             m <- sprintf("Elements {%s} are prohibited in %s",

@@ -45,6 +45,7 @@ tdc_statistic <- function(data, var, FUN, tstart = "tstart", tstop = "tstop"){
 tdc_count <- function(data, tstart = "tstart", tstop = "tstop"){
     r <- tdc_statistic(data, var = tstart, FUN = length,
                        tstart = tstart, tstop = tstop)
-    names(r) <- c("t", "count")
+    ## names(r) <- c("t", "count")
+    setnames(r, new = c("t", "count"))
     rbind(r, data.frame(t = max(data[[tstop]]), count = 0))
 }

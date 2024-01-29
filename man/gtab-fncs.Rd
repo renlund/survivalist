@@ -19,9 +19,9 @@ create_gtab(
 
 check_gtab(gtab, n = NULL)
 
-gtab_equiv2factor(gtab, verbose = TRUE, check = FALSE)
+gtab_equiv2factor(gtab, na.ok = FALSE, verbose = TRUE)
 
-gtab2factor(gtab, verbose = FALSE, check = FALSE)
+gtab2factor(gtab, na.ok = FALSE, verbose = FALSE)
 }
 \arguments{
 \item{term}{character; name of variable in data}
@@ -39,6 +39,9 @@ gtab2factor(gtab, verbose = FALSE, check = FALSE)
 \item{gtab}{data.frame; a "grouping table" (gtab)}
 
 \item{n}{optional; number of rows wanted}
+
+\item{na.ok}{logical; when considering a gtab as a factor, are missing
+values permissible?}
 }
 \description{
 group table (gtab) functions

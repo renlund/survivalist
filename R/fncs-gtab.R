@@ -8,6 +8,8 @@
 ##' @param rev logical; reverse order of the levels of 'term
 ##' @param gtab data.frame; a "grouping table" (gtab)
 ##' @param n optional; number of rows wanted
+##' @param na.ok logical; when considering a gtab as a factor, are missing
+##' values permissible?
 ##' @name gtab-fncs
 NULL
 
@@ -65,6 +67,11 @@ check_gtab <- function(gtab, n = NULL){
                     ") with missing values")
         stop(s)
     }
+    cs <- colSums(gtab)
+    if(any(cs==0)){
+        s <- paste0("gtab specifies empty subgroup")
+        stop(s)
+    }
     gtab
 }
 
@@ -72,43 +79,54 @@ check_gtab <- function(gtab, n = NULL){
 ##' @details gtab_equiv2factor: test if grouping table could be defined by a
 ##'     single factor
 ##' @export
-gtab_equiv2factor <- function(gtab, verbose = TRUE, check = FALSE){
-    if(check) check_gtab(gtab)
+gtab_equiv2factor <- function(gtab, na.ok = FALSE, verbose = TRUE){
+    check_gtab(gtab)
+    cs <- colSums(gtab)
+    if(length(cs) <= 1){
+        if(verbose) message("gtab needs to have 2 or more columns")
+        FALSE
+    }
+    if(sum(cs >= 1) <= 1){
+        if(verbose) message("gtab needs to specify at least 2 non-empty groups")
+        FALSE
+    }
     rs <- rowSums(gtab)
-    if( all(!is.na(rs)) && all(rs == 1)){
+    overlap <- any(rs > 1)
+    if(overlap){
+        if(verbose) message("overlapping groups")
+        FALSE
+    } else if(na.ok){
         TRUE
     } else {
-        if(verbose){
-            if(any( is.na(rs) )) message("missing values exists")
-            if(any( rs > 1, na.rm = TRUE )) message("overlapping groups")
-            if(any( rs == 0, na.rm = TRUE )){
-                message("some individuals belongs to no group")
-            }
+        if( any(rs == 0) ){
+            if(verbose) message("some individuals belongs to no group")
+            FALSE
+        } else {
+            TRUE
         }
-        FALSE
     }
 }
 
 ##' @rdname gtab-fncs
 ##' @details gtab2factor: create a factor from a grouping table (if possible)
 ##' @export
-gtab2factor <- function(gtab, verbose = FALSE, check = FALSE){
-    if(check) check_gtab(gtab)
-    equiv <- gtab_equiv2factor(gtab, verbose = verbose, check = FALSE)
+gtab2factor <- function(gtab, na.ok = FALSE, verbose = FALSE){
+    equiv <- gtab_equiv2factor(gtab, na.ok = na.ok, verbose = verbose)
     if(equiv){
         L <- names(gtab)
         N <- length(gtab)
         n <- nrow(gtab)
-        x <- character(n)
+        x <- rep(NA_character_, n)
         for(i in seq_along(gtab)){
             x[which(gtab[[i]])] <- L[i]
         }
         factor(x, levels = L)
     } else {
         warning("gtab not equivalent to a factor")
-        factor(character(0))
+        factor(character(0)) ## what should be returned (if anything)?
     }
 }
+
 
 ################################################################################
 ##         SANITY CHECKS AND TESTS                                            ##
@@ -128,5 +146,16 @@ if(FALSE){
 
     gl <- data.frame(a = c(T,T,F,F,F), b = c(T,F,T,NA,F))
     gtab_equiv2factor(gl)
+
+    gl <- data.frame(a = c(T,T,F,F,F), b = c(T,F,T,T,F))
+    gtab_equiv2factor(gl)
+
+    gl <- data.frame(a = c(T,T,F,F,F), b = c(F,F,T,T,F))
+    gtab_equiv2factor(gl)
+    gtab_equiv2factor(gl, na.ok = TRUE)
+
+    gtab2factor(gl)
+    gtab2factor(gl, na.ok = TRUE)
+
 
 }

@@ -46,7 +46,7 @@ locf <- function(x){
     }
 }
 
-##' cluster by include next
+##' cluster by 'include next' condition
 ##'
 ##' Given a logical variable indicating if the next line should belong to the
 ##' same cluster as the current line, this function creates an integer-valued

@@ -1,4 +1,4 @@
-##' @title individual time constrained grep
+##' @title individual and time constrained grep
 ##' @description in a dataset with one or more variables (typically containing
 ##'     text) associated with a date, find matches on those variables for
 ##'     specific individuals within specifed time frames

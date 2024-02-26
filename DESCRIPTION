@@ -1,10 +1,10 @@
 Package: survivalist
 Title: Survival Analysis Stuff
-Version: 0.1.0.9005
+Version: 0.1.0.9006
 Authors@R:
     person("Henrik", "Renlund", ,"henrikrenlund@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-2141-6086"))
-Description: This package contains functions related to SURVIVal AnaLysIs STuff (survivalist); data management, time dependent covariates, etc.
+Description: This package contains functions related to SURVIVal AnaLysIs STuff (survivalist); time dependent covariates, general data management, etc.
 License: `use_mit_license()`
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

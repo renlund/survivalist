@@ -62,25 +62,31 @@ survfit2df <- function(s = NULL, dt = TRUE){
                                    "n.risk", "n.event", "n.censor", "std.err"))
              data.frame(
                  'time' = s$time,
-                 'estimate' = s$surv,
+                 'estimate' = s$surv, ## should we remove this?
+                 'surv' = s$surv,
                  'ci.low' = s$lower,
                  'ci.high' = s$upper,
                  'n.risk' = s$n.risk,
                  'n.event' = s$n.event,
                  'n.censor' = s$n.censor,
                  'std.error' = s$std.err,
+                 'cumhaz' = s$cumhaz,
+                 'std.chaz' = s$cumhaz,
                  stringsAsFactors = FALSE
              )
          } else {
              data.frame(
                  'time' = NA_real_,
-                 'estimate' = NA_real_,
+                 'estimate' = NA_real_, ## should we remove this?
+                 'surv' = NA_real_,
                  'ci.low' = NA_real_,
                  'ci.high' = NA_real_,
                  'n.risk' = NA_real_,
                  'n.event' = NA_real_,
                  'n.censor' = NA_real_,
                  'std.error' = NA_real_,
+                 'cumhaz' = NA_real_,
+                 'std.chaz' = NA_real_,
                  stringsAsFactors = FALSE
              )
          }
@@ -110,6 +116,9 @@ if(FALSE){
     f <- Surv(rfstime, status) ~ grade + group
     v <- runif(nrow(d), 0.1, 1)
     d$vikt <- v
+
+    sf <- survfit(formula = f, data = d)
+    survfit2df(sf)
 
     survfitted(formula = y ~ time + estimate, data = d)
     str(survfitted(formula = f, data = d))

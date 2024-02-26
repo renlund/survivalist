@@ -2,7 +2,7 @@
 % Please edit documentation in R/itc_grep.R
 \name{itc_grep}
 \alias{itc_grep}
-\title{individual time constrained grep}
+\title{individual and time constrained grep}
 \usage{
 itc_grep(
   pattern,

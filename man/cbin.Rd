@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc-helpers.R
 \name{cbin}
 \alias{cbin}
-\title{cluster by include next}
+\title{cluster by 'include next' condition}
 \usage{
 cbin(incl.next)
 }

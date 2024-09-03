@@ -54,10 +54,13 @@ match_weight <- function(tr, cl, id, data = NULL, trv = 1){
     Dna <- subset(DATA, subset = na.filt)
     D   <- subset(DATA, subset = !na.filt)
     counter <- function(x){
-        x$n <- nrow(x)
-        x$tr_n <- sum(x$tr == trv)
-        x$ctrl_n <- sum(x$tr != trv)
-        x
+        n <- nrow(x)
+        if(n > 0){
+            x$n <- n
+            x$tr_n <- sum(x$tr == trv)
+            x$ctrl_n <- sum(x$tr != trv)
+            x
+        } else NULL
     }
     E <- do.call(what = rbind,
                  args = lapply(X = split(D, f = D$cl), FUN = counter))

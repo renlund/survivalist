@@ -11,11 +11,13 @@ survfit_galore(formula, data, surv = NULL, gtab = NULL, ...)
 
 \item{data}{data.frame; the data}
 
-\item{surv}{specification of surv components (NULL, character vector, or stab)}
+\item{surv}{specification of surv components (NULL, character vector, or
+stab)}
 
 \item{gtab}{data.frame; a grouping table (gtab)}
 
-\item{...}{other arguments for survfit}
+\item{...}{other arguments for survfit. Note: you can pass 'tp' for
+calculation of at risk numbers, survfit_galore will capture these}
 }
 \value{
 a data frame

@@ -4,7 +4,7 @@
 \alias{survfitted}
 \title{wrapper for 'survfit'}
 \usage{
-survfitted(formula, data, ..., keep.factors = TRUE)
+survfitted(formula, data, ..., time.unit = 1L, keep.factors = TRUE, tp = NULL)
 }
 \arguments{
 \item{formula}{formula passed (to survival::survfit.formula)}
@@ -13,12 +13,19 @@ survfitted(formula, data, ..., keep.factors = TRUE)
 
 \item{...}{other arguments passed}
 
-\item{keep.factors}{logical; keep factors in formula as factors in the output}
+\item{time.unit}{numerical; scale for time, e.g. set to 365.25 to convert
+from days o years}
+
+\item{keep.factors}{logical; keep factors in formula as factors in the
+output}
+
+\item{tp}{numerical vector; the time points for which to calculate at risk
+numbers. These will be attached as attribute 'at_risk' to the output.}
 }
 \value{
 a data frame
 }
 \description{
-This wrapper for survival::survfit.formula only splits the resulting 'strata'
-component into its constituting variables
+This wrapper for survival::survfit.formula only splits the resulting
+'strata' component into its constituting variables
 }

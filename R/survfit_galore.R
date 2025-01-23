@@ -5,9 +5,11 @@
 ##' supplying a list of indexes in a grouping table (gtab).
 ##' @param formula formula, of which only the RHS is used
 ##' @param data data.frame; the data
-##' @param surv specification of surv components (NULL, character vector, or stab)
+##' @param surv specification of surv components (NULL, character vector, or
+##'     stab)
 ##' @param gtab data.frame; a grouping table (gtab)
-##' @param ... other arguments for survfit
+##' @param ... other arguments for survfit. Note: you can pass 'tp' for
+##'     calculation of at risk numbers, survfit_galore will capture these
 ##' @return a data frame
 ##' @export
 survfit_galore <- function(formula, data, surv = NULL, gtab = NULL, ...){
@@ -24,20 +26,36 @@ survfit_galore <- function(formula, data, surv = NULL, gtab = NULL, ...){
     group_nm <- rename("group", avoid = all.vars(formula))
     R <- NULL
     fac <- TRUE ## this could be an option
-    for(G in names(gtab)){
+    dots <- list(...) ## dots <- as.list(NULL) ## dots <- list(tp=tp)
+    for(G in names(gtab)){ ## G = names(gtab[1])
         indx <- gtab[[G]]
-        for(i in seq_along(surv$label)){
+        for(i in seq_along(surv$label)){ ## i = 1
             S <- surv$label[i]
-            sf <- survfitted(
-                formula = eval(substitute(update(formula, Surv(TIME,EVENT) ~ .),
-                                     env = list(TIME = as.name(surv$time[i]),
-                                                EVENT = as.name(surv$event[i])))),
-                data = data[indx, ],
-                ...
-            )
+            dots$formula <- eval(substitute(
+                update(formula, Surv(TIME,EVENT) ~ .),
+                env = list(TIME = as.name(surv$time[i]),
+                           EVENT = as.name(surv$event[i]))))
+            dots$data <- data[indx, ]
+            sf <- do.call(what = survfitted, args = dots)
+            ## sf <- survfitted(
+            ##     formula = eval(substitute(update(formula, Surv(TIME,EVENT) ~ .),
+            ##                          env = list(TIME = as.name(surv$time[i]),
+            ##                                     EVENT = as.name(surv$event[i])))),
+            ##     data = data[indx, ],
+            ##     ...
+            ## )
             sf[[outcome_nm]] <- if(fac) factor(S, levels = surv$label) else S
             sf[[group_nm]] <- if(fac) factor(G, levels = names(gtab)) else G
-            R <- rbind(R, sf)
+            ar <- attr(sf, "at_risk")
+            if( !is.null(ar) ){
+                ar[[outcome_nm]] <- if(fac) factor(S, levels = surv$label) else S
+                ar[[group_nm]] <- if(fac) factor(G, levels = names(gtab)) else G
+                ## ar[, `:=`(outcome = if(fac) factor(S, levels = surv$label) else S,
+                ##           group = if(fac) factor(G, levels = names(gtab)) else G)]
+                AR <- rbind(attr(R, "at_risk"), ar)
+                R <- rbind(R, sf)
+                attr(R, "at_risk") <- AR
+            } else R <- rbind(R, sf)
         }
     }
     if(return_dt) as.data.table(R) else as.data.frame(R)
@@ -45,6 +63,7 @@ survfit_galore <- function(formula, data, surv = NULL, gtab = NULL, ...){
 
 if(FALSE){
 
+    rm(list=ls())
     library(survival)
 
     d <- gbsg ## data set in survival
@@ -63,6 +82,10 @@ if(FALSE){
     f = ~ grade + group
 
     str(survfit_galore(formula = f, data = d, surv = sl, gtab = gl))
+
+    test <- survfit_galore(formula = f, data = d, surv = sl, gtab = gl,
+                           tp = c(0,1000,5000))
+    str(attr(test, "at_risk"))
 
     str(survfit_galore(formula = f, data = d, surv = c("foo", "bar"), gtab = gl))
 

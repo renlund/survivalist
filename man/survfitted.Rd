@@ -19,13 +19,14 @@ from days o years}
 \item{keep.factors}{logical; keep factors in formula as factors in the
 output}
 
-\item{tp}{numerical vector; the time points for which to calculate at risk
+\item{tp}{numerical vector; the time points (tp) for which to calculate at risk
 numbers. These will be attached as attribute 'at_risk' to the output.}
 }
 \value{
 a data frame
 }
 \description{
-This wrapper for survival::survfit.formula only splits the resulting
-'strata' component into its constituting variables
+This wrapper for survival::survfit.formula splits the resulting 'strata'
+component into its constituting variables, allows for rescaling and can
+calculate numbers at risk.
 }

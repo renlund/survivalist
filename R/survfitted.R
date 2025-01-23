@@ -1,7 +1,8 @@
 ##' wrapper for 'survfit'
 ##'
-##' This wrapper for survival::survfit.formula only splits the resulting
-##' 'strata' component into its constituting variables
+##' This wrapper for survival::survfit.formula splits the resulting 'strata'
+##' component into its constituting variables, allows for rescaling and can
+##' calculate numbers at risk.
 ##' @param formula formula passed (to survival::survfit.formula)
 ##' @param data data passed
 ##' @param ... other arguments passed
@@ -9,7 +10,7 @@
 ##'     from days o years
 ##' @param keep.factors logical; keep factors in formula as factors in the
 ##'     output
-##' @param tp numerical vector; the time points for which to calculate at risk
+##' @param tp numerical vector; the time points (tp) for which to calculate at risk
 ##'     numbers. These will be attached as attribute 'at_risk' to the output.
 ##' @return a data frame
 ##' @export
@@ -85,7 +86,7 @@ survfitted <- function(formula, data, ..., time.unit = 1L,
                             if(nrow(r) == 0){
                                 break
                             } else {
-                                AR <- rbind(AR, cbind(eg[i,], r))
+                                AR <- rbind(AR, cbind(eg[i,, drop=FALSE], r))
                             }
                         }
                     }
@@ -97,7 +98,9 @@ survfitted <- function(formula, data, ..., time.unit = 1L,
                     NULL
                 }
             )
-            attr(R, "at_risk") <- at_risk
+            attr(R, "at_risk") <- if(return_dt){
+                                      at_risk
+                                  } else as.data.frame(at_risk)
         }
         if(return_dt) R else as.data.frame(R)
     }
@@ -183,6 +186,13 @@ if(FALSE){
     test <- survfitted(formula = f, data = d, time.unit = 365.25,
                            tp = c(0,2.5, 5, 7.5, 10))
     attr(test, "at_risk")
+
+    test <- survfitted(formula = Surv(rfstime, status) ~ grade,
+                       data = d, time.unit = 365.25,
+                       tp = c(0,2.5, 5, 7.5, 10))
+    attr(test, "at_risk")
+
+
 
 
     str(survfitted(formula = f, data = d, weights = v))

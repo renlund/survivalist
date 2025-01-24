@@ -79,9 +79,8 @@ survfitted <- function(formula, data, ..., time.unit = 1L,
                         for(j in seq_along(tp)){ ## j = 1
                             t <- tp[j]
                             r <- R[filt &
-                                   time <= t &
-                                   if(j>1) time > tp[j-1] else -Inf][
-                                which.max(time)][
+                                   time >= t][
+                                which.min(time)][
                               , .(tp = t, time, n.risk)]
                             if(nrow(r) == 0){
                                 break

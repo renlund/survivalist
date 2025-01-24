@@ -10,13 +10,13 @@
 ##' d <- data.frame(id = rep(1:3, each = 5),
 ##'                 foo = LETTERS[1:15],
 ##'                 bar = rep(letters[5:1], 3))
-##' procond(d, id = "id", foo=="H")
-##' procond(d, id = "id", foo=="H", prox = c(Inf,0))
-##' procond(d, id = "id", foo=="H", prox = c(1,1))
-##' procond(d, id = "id", foo %in% c("G", "H"), prox = c(1,1))
-##' procond(d, id = "id", bar == "b", prox = c(0,1))
+##' proxcond(d, id = "id", foo=="H")
+##' proxcond(d, id = "id", foo=="H", prox = c(Inf,0))
+##' proxcond(d, id = "id", foo=="H", prox = c(1,1))
+##' proxcond(d, id = "id", foo %in% c("G", "H"), prox = c(1,1))
+##' proxcond(d, id = "id", bar == "b", prox = c(0,1))
 ##' @export
-procond <- function(data, id, ..., prox = c(Inf,Inf)){
+proxcond <- function(data, id, ..., prox = c(Inf,Inf)){
     properties(data, class = "data.frame")
     properties(id, class = "character", length = 1, na.ok = FALSE)
     inclusion(names(data), nm = "names of data", include = id)

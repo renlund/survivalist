@@ -57,12 +57,15 @@ survfitted <- function(formula, data, ..., time.unit = 1L,
         R <- cbind(survfit2df(sf), as.data.table(M))
         if(length(fac) != 0){
             for(v in names(fac)){
-                R[[v]] <- factor(R[[v]], levels = fac[[v]])
+                ## R[[v]] <- factor(R[[v]], levels = fac[[v]])
+                R[, dummy := factor(R[[v]], levels = fac[[v]]),
+                  env = list(dummy = v)]
             }
         }
-        R[, time := time / time.unit]
+        if(time.unit != 1) R[, time := time / time.unit]
         if(!is.null(tp)){
-            at_risk <- tryCatch(
+            ## at_risk <- tryCatch(
+            tryCatch(
                 expr = {
                     eg <- do.call(what = expand.grid,
                                   args = c(V, list(stringsAsFactors = FALSE)))
@@ -89,7 +92,7 @@ survfitted <- function(formula, data, ..., time.unit = 1L,
                             }
                         }
                     }
-                    AR
+                    setDT(AR)
                 },
                 error = function(e){
                     w <- paste0("at risk calculation failed")
@@ -97,9 +100,14 @@ survfitted <- function(formula, data, ..., time.unit = 1L,
                     NULL
                 }
             )
-            attr(R, "at_risk") <- if(return_dt){
-                                      at_risk
-                                  } else as.data.frame(at_risk)
+            ## setattr(R, name = "at_risk",
+            ##         value = if(return_dt){
+            ##                     at_risk
+            ##                 } else as.data.frame(at_risk))
+            setattr(R, name = "at_risk",
+                    value = if(return_dt){
+                                copy(AR)
+                            } else as.data.frame(AR))
         }
         if(return_dt) R else as.data.frame(R)
     }

@@ -42,7 +42,8 @@ survfitted <- function(formula, data, ..., time.unit = 1L,
         survfit2df(sf)
     } else {
         y <- names(x)
-        ys <- strsplit(y, split = "(=|, )")
+        foo <- function(x) gsub(" *$", "",  x)
+        ys <- lapply(strsplit(y, split = "(=|, )"), foo)
         N <- length(ys)
         test <- ys[[1]]
         n <- length(test)

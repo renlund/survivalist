@@ -47,7 +47,7 @@ the smallest time is 1, else 0.
 
 rescale_surv: apply function to time component of surv variables
 
-trunacate_surv: truncate surv variables
+truncate_surv: truncate surv variables
 
 Survclass_surv: create variables of class 'Surv'
 }

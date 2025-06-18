@@ -80,7 +80,7 @@ shuffle <- function(x, y){
 }
 
 ##' @rdname transform_surv
-##' @details trunacate_surv: truncate surv variables
+##' @details truncate_surv: truncate surv variables
 ##' @export
 truncate_surv <- function(surv = NULL, data, trunc, id = NULL, strip = TRUE){
     properties(surv, class = c("NULL", "character", "data.frame"))

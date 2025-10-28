@@ -6,6 +6,7 @@
 \alias{rescale_surv}
 \alias{truncate_surv}
 \alias{Survclass_surv}
+\alias{landmark_surv}
 \title{transform surv variables}
 \usage{
 combine_surv(surv, data, id = NULL, nm = surv_nm("Combined"), strip = TRUE)
@@ -15,6 +16,8 @@ rescale_surv(surv = NULL, data, FUN, id = NULL, strip = TRUE)
 truncate_surv(surv = NULL, data, trunc, id = NULL, strip = TRUE)
 
 Survclass_surv(surv = NULL, data, id = NULL, strip = TRUE)
+
+landmark_surv(surv = NULL, data, landmark, id = NULL, strip = TRUE)
 }
 \arguments{
 \item{surv}{specification of surv components}
@@ -50,4 +53,6 @@ rescale_surv: apply function to time component of surv variables
 truncate_surv: truncate surv variables
 
 Survclass_surv: create variables of class 'Surv'
+
+landmark_surv: landmark surv variables
 }

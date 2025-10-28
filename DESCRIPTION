@@ -1,6 +1,6 @@
 Package: survivalist
 Title: Survival Analysis Stuff
-Version: 0.1.0.9016
+Version: 0.1.0.9017
 Authors@R:
     person("Henrik", "Renlund", ,"henrikrenlund@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-2141-6086"))
@@ -8,7 +8,7 @@ Description: This package contains functions related to SURVIVal AnaLysIs STuff 
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports: data.table
 Suggests:
     testthat (>= 3.0.0)

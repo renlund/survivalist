@@ -127,7 +127,6 @@ Survclass_surv <- function(surv = NULL, data, id = NULL, strip = TRUE){
     rm <- c(stab$time, stab$event)
     DATA <- subset(as.data.frame(data), subset = TRUE,
                    select = setdiff(names(data), rm))
-
     for(i in seq_along(stab$label)){
         DATA[[stab$label[i]]] <- survival::Surv(time = data[[stab$time[i]]],
                                                event = data[[stab$event[i]]])
@@ -139,6 +138,42 @@ Survclass_surv <- function(surv = NULL, data, id = NULL, strip = TRUE){
         DATA
     }
 }
+
+##' @rdname transform_surv
+##' @details landmark_surv: landmark surv variables
+##' @export
+landmark_surv <- function(surv = NULL, data, landmark, id = NULL, strip = TRUE){
+    properties(surv, class = c("NULL", "character", "data.frame"))
+    properties(data, class = "data.frame")
+    properties(landmark, class = c("numeric", "integer"), length = 1, na.ok = FALSE)
+    properties(id, class = c("NULL", "character"), length = 0:1, na.ok = FALSE)
+    properties(strip, class = "logical", length = 1, na.ok = FALSE)
+    if(is.character(id)) inclusion(names(data), nm = "data names", include = id)
+    if(is.null(surv)) surv <- extract_stab_from_names(names(data))
+    if(is.character(surv)) surv <- create_stab(s = surv)
+    stab <- verify_stab(stab = surv, nm = names(data))
+    return_dt <- return_data.table(is.data.table(data))
+    data <- as.data.table(data)
+    for(i in seq_along(stab$time)){
+        eval(expr = substitute(
+            expr = data[, c(foo_ch, bar_ch) := {
+                .(fifelse(foo <= landmark, NA_real_, foo - landmark),
+                  fifelse(foo <= landmark, NA, bar))
+            }],
+            env = list(foo_ch = stab$time[i],
+                       foo = as.name(stab$time[i]),
+                       bar_ch = stab$event[i],
+                       bar = as.name(stab$event[i]))
+        ))
+    }
+    r <- if(strip){
+        vs <- c(id, shuffle(stab$time, stab$event))
+        data[, vs, with = FALSE]
+    } else data
+    if(return_dt) r else as.data.frame(r)
+}
+
+
 
 if(FALSE){
 
@@ -188,6 +223,10 @@ if(FALSE){
     truncate_surv(surv = surv,
                   data = data,
                   trunc = 8,
+                  strip = FALSE)
+    landmark_surv(surv = surv,
+                  data = data,
+                  landmark = 6,
                   strip = FALSE)
 
 

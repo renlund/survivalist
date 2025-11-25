@@ -2,10 +2,13 @@
 % Please edit documentation in R/tdc_statistic.R
 \name{tdc_statistic}
 \alias{tdc_statistic}
+\alias{tdc_calculator}
 \alias{tdc_count}
 \title{statistics for time dependent covariates}
 \usage{
 tdc_statistic(data, var, FUN, tstart = "tstart", tstop = "tstop")
+
+tdc_calculator(data, FUN, tstart = "tstart", tstop = "tstop")
 
 tdc_count(data, tstart = "tstart", tstop = "tstop")
 }
@@ -14,8 +17,10 @@ tdc_count(data, tstart = "tstart", tstop = "tstop")
 
 \item{var}{character; name of variable of interest}
 
-\item{FUN}{a function; can return a vector of values. Note: if FUN returns a
-named vector, these will be retained in the output}
+\item{FUN}{a function. For tdc_statistic this operates on 'var' and can
+return a vector of values (if named, these will be retained in the
+output). For tdc_calculator this function takes a subset of data as the
+inputand should return a data.frame. See examples for clarification.}
 
 \item{tstart}{character; name of 'tstart' variable}
 
@@ -28,6 +33,10 @@ indicating the start and stop times for time intervals) with a covariate
 }
 \section{Functions}{
 \itemize{
+\item \code{tdc_calculator()}: tdc_calculator: similar to tdc_statistic but
+requires a function that operates on the data.frame. This also allows
+for grouped calculations.
+
 \item \code{tdc_count()}: Count individuals in study over time
 
 }}
@@ -41,4 +50,24 @@ tdc_statistic(data, var = "U", FUN = function(x){
     c("min" = min(x), "mean" = mean(x), "max" = max(x))
 })
 tdc_count(data)
+## for more advanced calculations one needs tdc_calculator
+d <- data.frame(id = 1:5, tstart = 0, tstop = c(10:14),
+                gr = rep(LETTERS[1:2], c(2,3)))
+u <- data.frame(id = 1:4, t = c(3,15,7,10))
+tm <- survival::tmerge(d, d, id = id, tstart = tstart, tstop = tstop)
+data <- survival::tmerge(tm, u, id = id, U = tdc(t))
+groupFnc <- function(d){
+  fnc <- function(SD){
+    with(SD, data.frame("min" = min(U), "mean" = mean(U), "max" = max(U)))
+  }
+  L <- lapply(X = split(d, f = d$gr), FUN = fnc)
+  cbind(gr = rep(names(L), lapply(L, nrow)), do.call(rbind, L))
+}
+tdc_calculator(data, FUN = groupFnc)
+## of course, a function like groupFnc is much easier to define using data.table
+groupFnc2 <- function(d){
+  D <- data.table::as.data.table(d)
+  D[, .("min" = min(U), "mean" = mean(U), "max" = max(U)), by = gr]
+}
+tdc_calculator(data, FUN = groupFnc2)
 }

@@ -15,9 +15,9 @@
 ##' treatment will be considered active one more unit of time. Note 5:
 ##' 'capacity' kicks in after the daily pills have been consumed, i.e. if you
 ##' initiate a treatment with a 100 pills but only have capacity for 10, you
-##' will consume 'usage' pills, and then have 10 left in the inventory.
-##' @param data a data.frame containing 'id', 't', 'state' and, optionally,
-##'     'run'.
+##' will consume 'usage' pills, and then have 10 left in the inventory (given
+##' that usage is less than 90, of course).
+##' @param data a data.frame
 ##' @param id character; name of id variable
 ##' @param t character; name of time variable
 ##' @param state character; name of treatment variable
@@ -111,9 +111,9 @@ pill_treatment <- function(data, id = "id", t = "t", state = "state",
 
     setnames(D, old = req_nm,
              new = c("id", "t", "state", "pills", "usage", "capacity"))
-    setkey(D, id, t)
+    setkey(D, id, t) ## this orders the data accordingly
     R <- rbindlist(l = lapply(X = split(D, f = D$id),
-                              FUN = pill_switch,
+                              FUN = pill_treatment_calculator,
                               null.state = null.state,
                               simplify = simplify))
     setnames(R, old = c("id", "t", "state"),
@@ -122,13 +122,14 @@ pill_treatment <- function(data, id = "id", t = "t", state = "state",
     if(return_dt) R else as.data.frame(R)
 }
 
-##' @describeIn pill_treatment The workhorse for pill_treatment; a rigid
+##' @describeIn pill_treatment pill_treatment: The workhorse for pill_treatment; a rigid
 ##'     function that requires a data.table with variables named 'id' (which
 ##'     should be a constant), 't' (which the data.table should be ordered on),
-##'     'state', 'pills' and 'usage'. Probably don't use this directly, there
-##'     are no checks or warnings of any kind with this function
+##'     'state', 'pills', 'usage' and 'capacity'. Probably don't use this
+##'     directly, there are no checks or warnings of any kind with this function
 ##' @export
-pill_switch <- function(data, null.state = "", simplify = TRUE){
+pill_treatment_calculator <- function(data, null.state = "", simplify = TRUE){
+    if(!is.data.table(data)) data <- as.data.table(data)
     N <- data[, t[.N] - t[1] + 1 + sum(ceiling(pills / usage))]
     y <- data.table(id = data$id[1], t = data$t[1] + 0:(N-1), pills = 0L)
     y[data, `:=`(state = i.state,

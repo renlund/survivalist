@@ -2,7 +2,7 @@
 % Please edit documentation in R/pill_treatment.R
 \name{pill_treatment}
 \alias{pill_treatment}
-\alias{pill_switch}
+\alias{pill_treatment_calculator}
 \title{treatment periods defined by pill consumption}
 \usage{
 pill_treatment(
@@ -17,11 +17,10 @@ pill_treatment(
   simplify = TRUE
 )
 
-pill_switch(data, null.state = "", simplify = TRUE)
+pill_treatment_calculator(data, null.state = "", simplify = TRUE)
 }
 \arguments{
-\item{data}{a data.frame containing 'id', 't', 'state' and, optionally,
-'run'.}
+\item{data}{a data.frame}
 
 \item{id}{character; name of id variable}
 
@@ -65,15 +64,16 @@ i.e. if e.g. usage is 2 and the current inventory of pills is 1, the
 treatment will be considered active one more unit of time. Note 5:
 'capacity' kicks in after the daily pills have been consumed, i.e. if you
 initiate a treatment with a 100 pills but only have capacity for 10, you
-will consume 'usage' pills, and then have 10 left in the inventory.
+will consume 'usage' pills, and then have 10 left in the inventory (given
+that usage is less than 90, of course).
 }
 \section{Functions}{
 \itemize{
-\item \code{pill_switch()}: The workhorse for pill_treatment; a rigid
+\item \code{pill_treatment_calculator()}: pill_treatment: The workhorse for pill_treatment; a rigid
 function that requires a data.table with variables named 'id' (which
 should be a constant), 't' (which the data.table should be ordered on),
-'state', 'pills' and 'usage'. Probably don't use this directly, there
-are no checks or warnings of any kind with this function
+'state', 'pills', 'usage' and 'capacity'. Probably don't use this
+directly, there are no checks or warnings of any kind with this function
 
 }}
 \examples{

@@ -2,9 +2,9 @@
 % Please edit documentation in R/misc-helpers.R
 \name{cumsum_bounded}
 \alias{cumsum_bounded}
-\title{cumsum bounded}
+\title{bounded cumulative summation}
 \usage{
-cumsum_bounded(x, low = 0, high = Inf)
+cumsum_bounded(x, low = 0, high = Inf, n = Inf)
 }
 \arguments{
 \item{x}{a numeric vector}
@@ -12,6 +12,8 @@ cumsum_bounded(x, low = 0, high = Inf)
 \item{low}{numeric; lower bound}
 
 \item{high}{numeric; upper bound}
+
+\item{n}{integer; used as in \code{cumsum2}}
 }
 \value{
 a numeric vector

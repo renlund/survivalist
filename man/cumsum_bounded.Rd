@@ -9,9 +9,9 @@ cumsum_bounded(x, low = 0, high = Inf, n = Inf)
 \arguments{
 \item{x}{a numeric vector}
 
-\item{low}{numeric; lower bound}
+\item{low}{numeric; lower bound can be length 1 or equal length as x}
 
-\item{high}{numeric; upper bound}
+\item{high}{numeric; upper bound can be length 1 or equal length as x}
 
 \item{n}{integer; used as in \code{cumsum2}}
 }

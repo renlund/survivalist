@@ -9,6 +9,9 @@
 ##' @return a vector of the same length as x
 ##' @export
 cumsum2 <- function(x, n = Inf){
+    properties(x, class = c("numeric", "integer"), na.ok = FALSE)
+    properties(n, class = c("numeric", "integer"), length = 1, na.ok = FALSE)
+    if(n != as.integer(n)) stop("n should be integer valued")
     N <- length(x)
     if(n >= N){
         cumsum(x)
@@ -23,8 +26,8 @@ cumsum2 <- function(x, n = Inf){
 ##'
 ##' a version of cumsum that will stay within specified boundaries
 ##' @param x a numeric vector
-##' @param low numeric; lower bound
-##' @param high numeric; upper bound
+##' @param low numeric; lower bound can be length 1 or equal length as x
+##' @param high numeric; upper bound can be length 1 or equal length as x
 ##' @param n integer; used as in \code{cumsum2}
 ##' @return a numeric vector
 ##' @export
@@ -34,25 +37,27 @@ cumsum2 <- function(x, n = Inf){
 ##' cumsum_bounded(c(0,-1,-100,1,7,-99,1,1,1,-1), high = 5)
 cumsum_bounded <- function(x, low = 0, high = Inf, n = Inf){
     properties(x, class = c("numeric", "integer"), na.ok = FALSE)
-    properties(n, class = c("numeric", "integer"), na.ok = FALSE)
+    properties(n, class = c("numeric", "integer"), length = 1, na.ok = FALSE)
     N <- length(x)
+    properties(low, class = c("numeric", "integer"),
+               length = c(1, N), na.ok = FALSE)
+    properties(high, class = c("numeric", "integer"),
+               length = c(1, N), na.ok = FALSE)
+    if(any(low >= high)) stop("args do not make sense (low must be < high)")
+    if(length(low) != N) low <- rep(low, N)
+    if(length(high) != N) high <- rep(high, N)
     if(n < N){
-            m0 <- x[1:n]
-            M <- matrix(0, nrow = n, ncol = N-n)
-            for(i in 1:(N-n)) M[,i] <- x[(i+1):(i+n)]
-            r0 <- cumsum_bounded(m0, low = low, high = high, n = n)
-            foo <- function(x){
-                cumsum_bounded(x, low = low, high = high, n = n)[length(x)]
-            }
-            R <- apply(M, MARGIN = 2, FUN = foo)
-            c(r0, R)
+        m0 <- x[1:n]
+        M <- matrix(0, nrow = n, ncol = N-n)
+        for(i in 1:(N-n)) M[,i] <- x[(i+1):(i+n)]
+        r0 <- cumsum_bounded(m0, low = low, high = high, n = n)
+        foo <- function(x){
+            cumsum_bounded(x, low = low, high = high, n = n)[length(x)]
+        }
+        R <- apply(M, MARGIN = 2, FUN = foo)
+        c(r0, R)
     } else {
-        properties(low, class = c("numeric", "integer"), length = c(1,N), na.ok = FALSE)
-        properties(high, class = c("numeric", "integer"), length = c(1,N), na.ok = FALSE)
-        if(any(low >= high)) stop("args do not make sense (low must be < high)")
         R <- rep(NA, N)
-        if(length(low) != N) low <- rep(low, N)
-        if(length(high) != N) high <- rep(high, N)
         bound <- function(z, i) min( max(z, low[i]), high[i] )
         R[1] <- bound(x[1], 1)
         if(N > 1){

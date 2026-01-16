@@ -30,14 +30,17 @@
 ##'     burden has reached V, each unit of time with no treatment will subtract
 ##'     from the burden by this value, so that the burden is V-dep.rate,
 ##'     V-2*dep.rate, etc (not being able to go below 0)
+##' @param horizon numeric; upper bound for times beyond which we are not
+##'     interested in calculating the burden (if such exists it is a good thing
+##'     to use NOW and not truncate later, it will speed things up)
 ##' @param breaks vector of values to cut the burden into (as one would use in
 ##'     the base function \code{cut}). If no breaks are given, the output will
 ##'     generally be very long.
+##' @param break.labels character; if breaks are used, this is the 'labels'
+##'     argument for \code{base::cut}
 ##' @param simplify logical; if breaks are given, then simplify = TRUE keep only
 ##'     minimal information enough to keep track of changes in categorized
 ##'     burden.
-##' @param break.labels character; if breaks are used, this is the 'labels'
-##'     argument for \code{base::cut}
 ##' @seealso \code{\link{pill_duration}}
 ##' @return If no simplification has been asked for you get a  data.frame
 ##'  \itemize{
@@ -57,12 +60,18 @@
 ##' }
 ##' @import data.table
 ##' @export
-pill_burden <- function(data, id = "id", t = "t",
-                        pills = "pills", usage = "usage",
+pill_burden <- function(data,
+                        id = "id",
+                        t = "t",
+                        pills = "pills",
+                        usage = "usage",
                         capacity = "capacity",
                         burden = "treatment",
-                        window = Inf, dep.rate = 1,
-                        breaks = NULL, break.labels = NULL,
+                        window = Inf,
+                        dep.rate = 1,
+                        horizon = Inf,
+                        breaks = NULL,
+                        break.labels = NULL,
                         simplify = TRUE){
     properties(data, class = "data.frame")
     properties(id, class = "character", length = 1, na.ok = FALSE)
@@ -71,6 +80,8 @@ pill_burden <- function(data, id = "id", t = "t",
     properties(usage, class = c("character", "numeric", "integer"),
                length = 1, na.ok = FALSE)
     properties(capacity, class = c("character", "numeric", "integer"),
+               length = 1, na.ok = FALSE)
+    properties(horizon, class = c("numeric", "integer"),
                length = 1, na.ok = FALSE)
     properties(burden, class = "character", length = 1, na.ok = FALSE)
     one_of(burden, set = c("treatment", "pill"))
@@ -139,6 +150,13 @@ pill_burden <- function(data, id = "id", t = "t",
         s <- paste0("'capacity' must be a (strictly) positive variable")
         stop(s)
     }
+    n_beyond <- D[, sum(t > horizon)]
+    if(n_beyond > 0){
+        s <- paste0("there are ", n_beyond, " lines in data beyond ",
+                    "the horizon, these are removed")
+        warning(s)
+        D <- D[t <= horizon]
+    }
     setnames(D, old = req_nm,
              new = c("id", "t", "pills", "usage", "capacity"))
     setkey(D, id, t) ## this orders the data accordingly
@@ -147,6 +165,7 @@ pill_burden <- function(data, id = "id", t = "t",
                               burden = burden,
                               window = window,
                               dep.rate = dep.rate,
+                              horizon = horizon,
                               breaks = breaks,
                               break.labels = break.labels,
                               simplify = simplify))
@@ -163,7 +182,7 @@ pill_burden <- function(data, id = "id", t = "t",
 ##'     function
 ##' @export
 pill_burden_calculator <- function(data, burden = "treatment",
-                                   window = Inf, dep.rate = 1,
+                                   window = Inf, dep.rate = 1, horizon = Inf,
                                    breaks = NULL, break.labels = NULL,
                                    simplify = FALSE){
     if(is.infinite(window) & dep.rate <= 0){
@@ -172,13 +191,17 @@ pill_burden_calculator <- function(data, burden = "treatment",
         stop(s)
     }
     if(!is.data.table(data)) data <- as.data.table(data)
-    N <- data[, t[.N] - t[1] + 1 +
-                sum(ceiling(pills / usage)) +
-                if(dep.rate > 0){
-                    sum(ceiling(pills / dep.rate))
-                } else {
-                    window
-                }]
+    if(data[, t[1] > horizon]) stop("data beyond horizon")
+    if(data[, t[.N] > horizon]) data <- data[t <= horizon]
+    N <- data[, min(
+        t[.N] - t[1] + 1 + sum(ceiling(pills / usage)) +
+        if(dep.rate > 0){
+            sum(ceiling(pills / dep.rate))
+        } else {
+            window
+        },
+        data[, horizon - t[1] + 1]
+    )]
     y <- data.table(id = data$id[1], t = data$t[1] + 0:(N-1), pills = 0L)
     y[data, `:=`(## trt = 1L,
                  usage = i.usage,
@@ -197,14 +220,13 @@ pill_burden_calculator <- function(data, burden = "treatment",
     y[, use := store.begin - store.end]
     y[use == 0, trt := 0L]
     y[, trt := as.integer(use > 0)]
-
     if(burden == "treatment"){
         y[, stat := fifelse(trt == 1, trt, -dep.rate)]
     } else {
         y[, stat := fifelse(trt == 1, use, -dep.rate)]
     }
-    y[, cumstat := cumsum_bounded(stat, low = 0, n = window)]
-    if(y[.N, cumstat != 0]){
+    y[, cumstat := cumsum_bounded(stat, low = 0, high = Inf, n = window)]
+    if(is.infinite(horizon) && y[.N, cumstat != 0]){
         s <- paste0("Ooops. If you see this error message it means ",
                     "that the author (who shall remain nameless) ",
                     "was not able to calculate the dimension needed ",
@@ -214,85 +236,18 @@ pill_burden_calculator <- function(data, burden = "treatment",
         warning(s)
     }
     if(!is.null(breaks)){
+        if(y[, any(cumstat > max(breaks)) || any(cumstat) < min(breaks)]){
+            s <- paste0("breaks not large or small enough; id ", data$id[1],
+                        " has cumulative stat in the range of ",
+                        y[, min(cumstat)], " - ", y[, max(cumstat)], ".")
+            stop(s)
+        }
         y[, cumstatcat := cut(cumstat, breaks = breaks,
                               labels = break.labels,
                               include.lowest = TRUE)]
         if(simplify){
             y[, tmp := cbin(cumstatcat == shift(cumstatcat, type = "lead"))]
             y[!duplicated(tmp), .(id, t, cumstatcat)]
-        } else y[1:last0index(cumstat)]
-    } else y[1:last0index(cumstat)]
-}
-
-last0index <- function(x){
-    z <- x == 0
-    rl <- rle(z)
-    L <- rl$lengths
-    V <- rl$values
-    m <- length(L)
-    if(isFALSE(V[m])){
-        length(x)
-    } else {
-        if(m == 1) 1 else cumsum(L[1:(m-1)])[m-1] + 1
-    }
-}
-
-if(FALSE){
-
-    library(data.table)
-    library(devtools)
-    load_all()
-
-    data <- data.table(
-        id = 1,
-        t =  c(0,  5, 10),
-        pills = c(4, 10,  7),
-        usage = c(3,  1,  2),
-        capacity = Inf
-    )
-    burden = "treatment" ## "pill"
-    window = Inf
-    dep.rate = 1
-    breaks = c("zero" = -1, "1-5" = 0, "5-10" = 5, "above 10" = 10, "foo" = Inf)
-    simplify = FALSE
-
-    (pbc <- pill_burden_calculator(data, burden, window, dep.rate, breaks, simplify))
-
-    pill_burden(data)
-    pill_burden(data, breaks = breaks)
-
-    d2 <- data.table(
-        id = 2,
-        t =  c(5),
-        pills = c(100),
-        usage = c(1),
-        capacity = 10
-    )
-    d3 <- data.table(
-        id = 3,
-        t =  c(5),
-        pills = c(10),
-        usage = c(100),
-        capacity = 4
-    )
-    d4 <- data.table(
-        id = 4,
-        t =  c(5),
-        pills = c(100),
-        usage = c(10),
-        capacity = 20
-    )
-    data2 <- rbind(data, d2, d3, d4)
-
-    pill_burden(data2)
-    pill_burden(data2, burden = "pill")
-    pill_burden(data2, window = 5)
-    pill_burden(data2, dep.rate = 5)
-    pill_burden(data2, window = 4, dep.rate = 5)
-    pill_burden(data2, breaks = breaks)
-    pill_burden(data2, window = 4, dep.rate = 5, breaks = breaks)
-
-
-
-
+        } else y[1:endingSeqFirstIndex(cumstatcat)]
+    } else y[1:endingSeqFirstIndex(cumstat)]
 }

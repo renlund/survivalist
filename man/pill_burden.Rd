@@ -15,6 +15,7 @@ pill_burden(
   burden = "treatment",
   window = Inf,
   dep.rate = 1,
+  horizon = Inf,
   breaks = NULL,
   break.labels = NULL,
   simplify = TRUE
@@ -25,6 +26,7 @@ pill_burden_calculator(
   burden = "treatment",
   window = Inf,
   dep.rate = 1,
+  horizon = Inf,
   breaks = NULL,
   break.labels = NULL,
   simplify = FALSE
@@ -58,6 +60,10 @@ data, the value Inf will be assigned.}
 burden has reached V, each unit of time with no treatment will subtract
 from the burden by this value, so that the burden is V-dep.rate,
 V-2*dep.rate, etc (not being able to go below 0)}
+
+\item{horizon}{numeric; upper bound for times beyond which we are not
+interested in calculating the burden (if such exists it is a good thing
+to use NOW and not truncate later, it will speed things up)}
 
 \item{breaks}{vector of values to cut the burden into (as one would use in
 the base function \code{cut}). If no breaks are given, the output will

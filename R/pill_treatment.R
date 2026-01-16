@@ -72,14 +72,14 @@ pill_treatment <- function(data, id = "id", t = "t", state = "state",
         s <- paste0("'", usage, "' not in data. Value 1 assigned.")
         usage <- 1
         uchar <- FALSE
-        warning(s)
+        message(s)
     }
     cchar <- is.character(capacity)
     if(cchar & !capacity %in% names(data)){
         s <- paste0("'", capacity, "' not in data. Value Inf assigned.")
         capacity <- Inf
         cchar <- FALSE
-        warning(s)
+        message(s)
     }
     req_nm <- c(id, t, state, pills,
                 if(uchar) usage else NULL,

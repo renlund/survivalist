@@ -44,8 +44,6 @@ cumsum_bounded <- function(x, low = 0, high = Inf, n = Inf){
     properties(high, class = c("numeric", "integer"),
                length = c(1, N), na.ok = FALSE)
     if(any(low >= high)) stop("args do not make sense (low must be < high)")
-    if(length(low) != N) low <- rep(low, N)
-    if(length(high) != N) high <- rep(high, N)
     if(n < N){
         m0 <- x[1:n]
         M <- matrix(0, nrow = n, ncol = N-n)
@@ -57,6 +55,8 @@ cumsum_bounded <- function(x, low = 0, high = Inf, n = Inf){
         R <- apply(M, MARGIN = 2, FUN = foo)
         c(r0, R)
     } else {
+        if(length(low) != N) low <- rep(low, N)
+        if(length(high) != N) high <- rep(high, N)
         R <- rep(NA, N)
         bound <- function(z, i) min( max(z, low[i]), high[i] )
         R[1] <- bound(x[1], 1)
@@ -229,4 +229,34 @@ event1trunc <- function(data, id = "id", event){
     ))
     return_dt <- return_data.table(is.data.table(data))
     if(return_dt) R else as.data.frame(R)
+}
+
+## a vector x might end with a long sequence of zeros; this function returns the
+## first index of that last run of zeros - if the last value is not a zero, the
+## index of the last entry is returned (i.e. length of x)
+ending0seqFirstIndex <- function(x){
+    z <- x == 0
+    rl <- rle(z)
+    L <- rl$lengths
+    V <- rl$values
+    m <- length(L)
+    if(isFALSE(V[m])){
+        length(x)
+    } else {
+        if(m == 1) 1 else cumsum(L[1:(m-1)])[m-1] + 1
+    }
+}
+
+## this function returns the first index of the last constant sequence in x
+endingSeqFirstIndex <- function(x){
+    n <- length(x)
+    if(n == 0){
+        0
+    } else {
+        v <- x[n]
+        z <- if(!is.na(v)) x == v else is.na(x)
+        L <- rle(z)$lengths
+        m <- length(L)
+        cumsum(L[1:(m-1)])[m-1] + 1
+    }
 }

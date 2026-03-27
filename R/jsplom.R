@@ -34,8 +34,14 @@ jsplom <- function(x, new.names = NULL, ggcode = TRUE){
     }
     RR <- rbind(R, data.table(x.term = nm, y.term = nm, x = NA_real_, y = NA_real_))
     C <- RR[, .(Corr = cor(x, y, method = "spearman")), by = .(x.term, y.term)]
-    C[R[, .(x = mid(x)), by = x.term], x := i.x, on = "x.term"]
-    C[R[, .(y = mid(y)), by = y.term], y := i.y, on = "y.term"]
+    C[R[, .(xmin = min(x, na.rm = TRUE),
+            x = mid(x),
+            xmax = max(x, na.rm = TRUE)), by = x.term],
+      `:=`(xmin = i.xmin, x = i.x, xmax = i.xmax), on = "x.term"]
+    C[R[, .(ymin = min(y, na.rm = TRUE),
+            y = mid(y),
+            ymax = max(y, na.rm = TRUE)), by = y.term],
+      `:=`(ymin = i.ymin, y = i.y, ymax = i.ymax), on = "y.term"]
     setorder(C, -Corr, na.last = TRUE)
     tmp <- C[1:.N %% 2 == 1][, i := .I][][, c(x.term, y.term), by = i]
     term.order <- tmp[!duplicated(V1), V1]

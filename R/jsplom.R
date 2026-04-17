@@ -33,7 +33,9 @@ jsplom <- function(x, new.names = NULL, ggcode = TRUE){
         if(length(z2) == 0) 0 else (max(z2) + min(z2)) / 2
     }
     RR <- rbind(R, data.table(x.term = nm, y.term = nm, x = NA_real_, y = NA_real_))
-    C <- RR[, .(Corr = cor(x, y, method = "spearman")), by = .(x.term, y.term)]
+    C <- RR[, .(Corr = cor(x, y, method = "spearman",
+                           use = "pairwise.complete.obs")),
+            by = .(x.term, y.term)]
     C[R[, .(xmin = min(x, na.rm = TRUE),
             x = mid(x),
             xmax = max(x, na.rm = TRUE)), by = x.term],

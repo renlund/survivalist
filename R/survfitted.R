@@ -12,10 +12,11 @@
 ##'     output
 ##' @param tp numerical vector; the time points (tp) for which to calculate at risk
 ##'     numbers. These will be attached as attribute 'at_risk' to the output.
+##' @param t0 logical, if TRUE \code{survfit0} will be applied
 ##' @return a data frame
 ##' @export
 survfitted <- function(formula, data, ..., time.unit = 1L,
-                       keep.factors = TRUE, tp = NULL){
+                       keep.factors = TRUE, tp = NULL, t0 = TRUE){
     properties(formula, nm = "The formula", class = "formula")
     properties(data, class = "data.frame")
     properties(keep.factors, class = "logical", length = 1, na.ok = FALSE)
@@ -36,7 +37,7 @@ survfitted <- function(formula, data, ..., time.unit = 1L,
     dots$formula <- formula
     dots$data <- data
     tmp_sf <- do.call(what = survival::survfit.formula, args = dots)
-    sf <- survival::survfit0(tmp_sf)
+    sf <- if(t0) survival::survfit0(tmp_sf) else tmp_sf
     x <- sf$strata
     if(is.null(x)){
         survfit2df(sf)
@@ -58,14 +59,12 @@ survfitted <- function(formula, data, ..., time.unit = 1L,
         R <- cbind(survfit2df(sf), as.data.table(M))
         if(length(fac) != 0){
             for(v in names(fac)){
-                ## R[[v]] <- factor(R[[v]], levels = fac[[v]])
                 R[, dummy := factor(R[[v]], levels = fac[[v]]),
                   env = list(dummy = v)]
             }
         }
         if(time.unit != 1) R[, time := time / time.unit]
         if(!is.null(tp)){
-            ## at_risk <- tryCatch(
             tryCatch(
                 expr = {
                     eg <- do.call(what = expand.grid,
@@ -101,10 +100,6 @@ survfitted <- function(formula, data, ..., time.unit = 1L,
                     NULL
                 }
             )
-            ## setattr(R, name = "at_risk",
-            ##         value = if(return_dt){
-            ##                     at_risk
-            ##                 } else as.data.frame(at_risk))
             setattr(R, name = "at_risk",
                     value = if(return_dt){
                                 copy(AR)

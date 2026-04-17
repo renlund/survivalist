@@ -4,7 +4,15 @@
 \alias{survfitted}
 \title{wrapper for 'survfit'}
 \usage{
-survfitted(formula, data, ..., time.unit = 1L, keep.factors = TRUE, tp = NULL)
+survfitted(
+  formula,
+  data,
+  ...,
+  time.unit = 1L,
+  keep.factors = TRUE,
+  tp = NULL,
+  t0 = TRUE
+)
 }
 \arguments{
 \item{formula}{formula passed (to survival::survfit.formula)}
@@ -21,6 +29,8 @@ output}
 
 \item{tp}{numerical vector; the time points (tp) for which to calculate at risk
 numbers. These will be attached as attribute 'at_risk' to the output.}
+
+\item{t0}{logical, if TRUE \code{survfit0} will be applied}
 }
 \value{
 a data frame

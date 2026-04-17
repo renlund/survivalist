@@ -37,21 +37,12 @@ survfit_galore <- function(formula, data, surv = NULL, gtab = NULL, ...){
                            EVENT = as.name(surv$event[i]))))
             dots$data <- data[indx, ]
             sf <- do.call(what = survfitted, args = dots)
-            ## sf <- survfitted(
-            ##     formula = eval(substitute(update(formula, Surv(TIME,EVENT) ~ .),
-            ##                          env = list(TIME = as.name(surv$time[i]),
-            ##                                     EVENT = as.name(surv$event[i])))),
-            ##     data = data[indx, ],
-            ##     ...
-            ## )
             sf[[outcome_nm]] <- if(fac) factor(S, levels = surv$label) else S
             sf[[group_nm]] <- if(fac) factor(G, levels = names(gtab)) else G
             ar <- attr(sf, "at_risk")
             if( !is.null(ar) ){
                 ar[[outcome_nm]] <- if(fac) factor(S, levels = surv$label) else S
                 ar[[group_nm]] <- if(fac) factor(G, levels = names(gtab)) else G
-                ## ar[, `:=`(outcome = if(fac) factor(S, levels = surv$label) else S,
-                ##           group = if(fac) factor(G, levels = names(gtab)) else G)]
                 AR <- rbind(attr(R, "at_risk"), ar)
                 R <- rbind(R, sf)
                 attr(R, "at_risk") <- AR

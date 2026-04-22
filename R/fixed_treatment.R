@@ -91,8 +91,8 @@ fixed_switch <- function(data, null.state = "", simplify = TRUE){
 ##' @export
 onoff_treatment <- function(data, id = "id", t = "t", run = "run",
                             simplify = TRUE){
-    fixed_treatment(as.data.frame(data)[, state := 1L],
-                    id = d,
+    fixed_treatment(as.data.table(data)[, state := 1L],
+                    id = id,
                     t = t,
                     state = "state",
                     run = run,

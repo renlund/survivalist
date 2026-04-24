@@ -1,0 +1,249 @@
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{trtdur}
+%\VignetteEncoding{UTF-8}
+\documentclass{article}
+%% \addtolength{\hoffset}{-1.2cm}
+%% \addtolength{\textwidth}{2.4cm}
+\usepackage{longtable}
+% \usepackage[table]{xcolor}
+%% \addtolength{\voffset}{-1cm}
+%% \addtolength{\textheight}{2cm}
+
+\title{Treatment duration}
+\author{Henrik Renlund}
+
+<<"setup", cache = FALSE, echo = FALSE, include = FALSE>>=
+library(knitr)
+library(data.table)
+library(survival)
+library(survivalist)
+## devtools::load_all() ## when testing
+opts_chunk$set(include = TRUE,
+               echo = TRUE,
+               cache = FALSE)
+opts_knit$set(eval.after = c('fig.cap', 'fig.scap'))
+if(FALSE){
+    setwd('vignettes')
+    knitr::knit2pdf("trtdur.rnw", clean = TRUE)
+    shell.exec("trtdur.pdf")
+}
+@
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+%% \newpage
+%% \listoffigures
+%% \listoftables
+%% \newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Setting}
+
+This vignette describe functions that deal with the calculation of treatment
+durations. The setting is that we get information about the dispensation of
+drugs from we we wish to extract time periods where the subject is (plausibly)
+on or off treatment.
+
+Sometimes it might be plausible to assume that a dispensation is meant to last a
+fixed amount of time so that the functions in Section \ref{sec:fix} are enough.
+
+If the drug is taken as pill, with a known consumption rate, then the
+dispensation size can guide us to the treatment duration - see Section
+\ref{sec:pill}.
+
+
+
+\clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Fixed duration}\label{sec:fix}
+
+Information about treatment initiation with fixed duration is handled with
+\texttt{fixed\_treatment}. The information should be contained in a data frame
+with the following variables
+
+\begin{itemize}
+  \item \texttt{id} subject id
+  \item \texttt{t} the time variable
+  \item \texttt{state} treatment
+  \item \texttt{run} duration (can also be given as a number to
+    \texttt{fixed\_treatment} if it is not present in the data)
+\end{itemize}
+
+Note: the variables need not have these names, you can specify their actual
+names in \texttt{fixed\_treatment}.
+
+<<"fix-1">>=
+d <- rowwiseDT(
+    id=, t=, state=, run=,
+    1,    1,    "A",    5,
+    1,   10,    "B",   15,
+    1,   20,    "C",   50,
+    1,   21,    "C",    9
+)
+(ft <- fixed_treatment(data = d, null.state = "*"))
+@
+
+Note that the treatment (A) initiated on day 1 lasts 5 days, so at day 6 the
+treatment status reverts to the null state (since no other treatment is
+initiated). The treatment (B) initiated on day 10 could last 15 days but is
+interrupted by treatment (C) on day 20. On day 20 C is initated to last a full
+50 days but is updated on day 21 to only last 9 more days and thus treatment is
+over on day 30.
+
+This example is meant to illustrate "competing drugs" for the same treatment,
+e.g.\ different oral anticoagulants for atrial fibrillation. If one is
+considering drugs that can be taken simultaneously, one would simply apply
+\texttt{fixed\_treatment} several time on different drug data.
+
+\newpage
+\noindent Getting treatment durations is often useful in connection with
+time-dependent covariates which can be created with the
+\texttt{survival::tmerge} function.
+
+<<"fix-1-tdc">>=
+b <- data.table(id=1, tstart=0, tstop=50)
+T0 <- tmerge(b, b, id = id, tstart = tstart, tstop = tstop)
+tmerge(T0, ft, id = id, trt = tdc(t, state, init = "*"))
+@
+
+When there is a single treatment one can use the wrapper
+\texttt{onoff\_treatment}, for which one need \emph{not} provide a
+\texttt{state} variable.
+
+<<"fix-2">>=
+d <- rowwiseDT(
+    id=, t=,  run=,
+    1,    1,     5,
+    1,   10,    99,
+    1,   20,    10
+)
+onoff_treatment(data = d)
+@
+
+
+\clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Pill-based duration}\label{sec:pill}
+
+Information about treatment initiation with pill-based duration is handled with
+\texttt{pill\_treatment}. The information should be contained in a data frame
+with the following variables
+
+\begin{itemize}
+  \item \texttt{id} subject id
+  \item \texttt{t} the time variable
+  \item \texttt{state} treatment state
+  \item \texttt{pills} number of pills provided at this time
+  \item \texttt{usage} daily number of pills to consume (at this time). Can also
+    be given to \texttt{pill\_treatment} as an integer.
+  \item \texttt{capacity} the maximum number of pills that can be kept in
+    storage (at this time, applied \emph{after} the daily dose has been
+    consumed). Can also be given to \texttt{pill\_treatment} as an integer.
+\end{itemize}
+
+Note:
+
+\begin{itemize}
+  \item the variables need not have these names, you can specify their actual
+    names in \texttt{fixed\_treatment}.
+  \item \emph{Pills are stored.} Unlike \texttt{fixed\_treatment} where a new
+    duration directive for the same treatment kills the previous duration, an
+    addition of pills will just add to the stockpile of pills. \emph{However,}
+    this is only true if the pills are for the same treatment.
+\end{itemize}
+
+
+\newpage
+
+<<"pill-1">>=
+d <- rowwiseDT(
+    id=, t=, state=, pills=, usage=, capacity=,
+    1,    1,    "A",     10,      2,       Inf,
+    1,   10,    "A",   1000,      1,         5,
+    1,   20,    "A",     10,      1,       Inf,
+    1,   25,    "A",     10,      1,       Inf,
+    1,  100,    "A",     50,      1,       Inf,
+    1,  110,    "B",     50,      1,       Inf
+)
+pill_treatment(data = d)
+@
+
+Note: treatment A on day 1 is initiated with 10 pills but a daily usage of 2 so
+only lasts 5 days. Treatment A re-initiated on day 10 gets 1000 pills but the
+stock-piling capacity is only 5, which takes effect after the daily dose is
+consumed making the duration of that treatment initiation only 6 days. The
+re-initiation on day 20 is prolonged by the pills received on day 25. The
+re-initiation of A on day 100 is terminated (and the stock-pile of A-pills is
+nullified) on day 110 by a new treatment B.
+
+
+
+\clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Related topics}
+
+%% =============================================================================
+\subsection{Treatment burden}
+
+Here we want to calculates some measure of how much treatment (\emph{a single
+treatment}) a subject is exposed to. It is not obvious how to create such a
+measure in a meaningful way. The function \texttt{pill\_burden} is an attempt to
+do so.
+
+To see what is calculated, lets look at (part of) the rather large return data
+frame we get from a call.
+
+<<"burden-1">>=
+d <- rowwiseDT(
+    id=, t=,  pills=,
+    1,    1,      16
+)
+pb <- pill_burden(data = d, usage = 2, capacity = Inf, window = 4,
+                  burden = "treatment", dep.rate = 1)
+pb[, .(id, t, store.begin, store.end, use, trt, stat, cumstat)]
+@
+
+Here
+
+\begin{itemize}
+\item \texttt{use} shows pill consumption
+\item \texttt{trt} shows treatment status (0/1)
+\item \texttt{stat} is what is to be summed, in this case - since we called the
+  function with \texttt{burden = "treatment"} - it is +1 for treatment and
+  -\texttt{dep.rate} (-1 in this example) for non-treatment.
+\item \texttt{cumstat} is the cumulative summation of \texttt{stat} within a
+  window of length \texttt{window} (4 in this example), bounded to never drop
+  below zero.
+\end{itemize}
+
+It is the \texttt{cumstat} column we are interested in.
+
+If we repeat the example but change the \texttt{burden} argument, we instead get
+
+<<"burden-2">>=
+pill_burden(data = d, usage = 2, capacity = Inf, window = 4,
+            burden = "pill", dep.rate = 1)[
+  , .(id, t, store.begin, store.end, use, trt, stat, cumstat)]
+@
+
+The difference here is how \texttt{stat} is calculated, now it is on
+\texttt{use} instead of \texttt{trt}.
+
+As is clear, this function generates a looong output and perhaps with too fine a
+detail. If a less fine \texttt{cumstat} can do, this can be achieved with using
+the \texttt{breaks} argument.
+
+<<"burden-333">>=
+pill_burden(data = d, usage = 2, capacity = Inf, window = 4,
+            burden = "pill", dep.rate = 1,
+            breaks = c(-1,0,5,10),
+            break.labels = c("no burden",
+                             "1-5 pill burden",
+                             "6-10 pill burden"),
+            simplify = TRUE)
+@
+
+
+\end{document}

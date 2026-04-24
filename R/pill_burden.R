@@ -236,7 +236,7 @@ pill_burden_calculator <- function(data, burden = "treatment",
         warning(s)
     }
     if(!is.null(breaks)){
-        if(y[, any(cumstat > max(breaks)) || any(cumstat) < min(breaks)]){
+        if(y[, any(cumstat > max(breaks)) || any(cumstat < min(breaks))]){
             s <- paste0("breaks not large or small enough; id ", data$id[1],
                         " has cumulative stat in the range of ",
                         y[, min(cumstat)], " - ", y[, max(cumstat)], ".")

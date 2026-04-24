@@ -37,6 +37,12 @@ combine_surv <- function(surv, data, id = NULL, nm = surv_nm("Combined"),
     data <- as.data.table(data)
     times <- data[, stab$time, with = FALSE]
     events <- data[, stab$event, with = FALSE]
+    all_cens <- rowSums(events) == 0
+    if(!sameValues(x = times[all_cens == TRUE], tol = 1/1000)){
+        s <- paste0("Time-to-event pairs to combine do not seem ",
+                    "to share a common censoring time.")
+        warning(s)
+    }
     min_t <- do.call(pmin, times)
     max_ev <- as.integer(rowSums((times == min_t) * (events)) > 0)
     data[, (nm) := .(min_t, max_ev)]
@@ -45,6 +51,11 @@ combine_surv <- function(surv, data, id = NULL, nm = surv_nm("Combined"),
         data[, vs, with = FALSE]
     } else data
     if(return_dt) r else as.data.frame(r)
+}
+
+sameValues <- function(x, tol = 0){
+    r <- lapply(X = x, FUN = \(z) abs(z - x[,1]))
+    all(unlist(lapply(r, sum)) <= tol)
 }
 
 ##' @rdname transform_surv

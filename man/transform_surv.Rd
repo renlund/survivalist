@@ -17,7 +17,14 @@ truncate_surv(surv = NULL, data, trunc, id = NULL, strip = TRUE)
 
 Survclass_surv(surv = NULL, data, id = NULL, strip = TRUE)
 
-landmark_surv(surv = NULL, data, landmark, id = NULL, strip = TRUE)
+landmark_surv(
+  surv = NULL,
+  data,
+  landmark,
+  id = NULL,
+  strip = TRUE,
+  reset = TRUE
+)
 }
 \arguments{
 \item{surv}{specification of surv components}
@@ -37,6 +44,8 @@ components are originally measured in days and you want them to be
 measured in years (rescale_surv)}
 
 \item{trunc}{numeric, the time to truncate at (truncate_surv)}
+
+\item{landmark}{numeric, the time at which to landmark (landmark_surv)}
 }
 \description{
 Different functions for transforming surv variables: combine, truncate,

@@ -13,6 +13,7 @@
 ##' @param strip logical, strip everything from data apart from the combined
 ##'     surv calculated and id (if specified)?
 ##' @param trunc numeric, the time to truncate at (truncate_surv)
+##' @param landmark numeric, the time at which to landmark (landmark_surv)
 ##' @name transform_surv
 NULL
 
@@ -142,7 +143,8 @@ Survclass_surv <- function(surv = NULL, data, id = NULL, strip = TRUE){
 ##' @rdname transform_surv
 ##' @details landmark_surv: landmark surv variables
 ##' @export
-landmark_surv <- function(surv = NULL, data, landmark, id = NULL, strip = TRUE){
+landmark_surv <- function(surv = NULL, data, landmark, id = NULL, strip = TRUE,
+                          reset = TRUE){
     properties(surv, class = c("NULL", "character", "data.frame"))
     properties(data, class = "data.frame")
     properties(landmark, class = c("numeric", "integer"), length = 1, na.ok = FALSE)
@@ -155,16 +157,17 @@ landmark_surv <- function(surv = NULL, data, landmark, id = NULL, strip = TRUE){
     return_dt <- return_data.table(is.data.table(data))
     data <- as.data.table(data)
     for(i in seq_along(stab$time)){
-        eval(expr = substitute(
-            expr = data[, c(foo_ch, bar_ch) := {
-                .(fifelse(foo <= landmark, NA_real_, foo - landmark),
-                  fifelse(foo <= landmark, NA, bar))
-            }],
-            env = list(foo_ch = stab$time[i],
-                       foo = as.name(stab$time[i]),
-                       bar_ch = stab$event[i],
-                       bar = as.name(stab$event[i]))
-        ))
+        data[, c(ti_ch, ev_ch) := {
+            .(fifelse(ti <= landmark,
+                      yes = NA_real_,
+                      no = if(reset) ti - landmark else ti),
+              fifelse(ti <= landmark,
+                      yes = NA,
+                      no = ev))
+        }, env = list(ti_ch = I(stab$time[i]),
+                      ti = stab$time[i],
+                      ev_ch = I(stab$event[i]),
+                      ev = stab$event[i])]
     }
     r <- if(strip){
         vs <- c(id, shuffle(stab$time, stab$event))

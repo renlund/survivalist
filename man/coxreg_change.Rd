@@ -6,7 +6,7 @@
 \usage{
 coxreg_change(
   data,
-  surv,
+  surv = NULL,
   main,
   terms,
   uni = TRUE,
@@ -20,7 +20,8 @@ coxreg_change(
 \arguments{
 \item{data}{data frame}
 
-\item{surv}{name of response 'Surv'-variable in data set}
+\item{surv}{an 'stab' with 1 row or, if surv pair can be identified through
+the default affix, the common name (label) for the pair}
 
 \item{main}{name of main effect (binary)}
 

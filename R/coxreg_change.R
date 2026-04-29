@@ -5,7 +5,8 @@
 ##'     excluded from full model), sequentially increasing (starting from
 ##'     a small model), or sequentially decreasing (starting from large model)
 ##' @param data data frame
-##' @param surv name of response 'Surv'-variable in data set
+##' @param surv an 'stab' with 1 row or, if surv pair can be identified through
+##'     the default affix, the common name (label) for the pair
 ##' @param main name of main effect (binary)
 ##' @param terms vector of terms to adjust for (can be named)
 ##' @param uni logical; include each term's 'univariate' effect on main?
@@ -19,29 +20,46 @@
 ##' @param decr.exc logical; decreasing order for sequential exclusion?
 ##' @return a list of data frames
 ##' @export
-coxreg_change <- function(data, surv, main, terms,
+coxreg_change <- function(data, surv = NULL, main, terms,
                           uni = TRUE, full = TRUE,
                           inc = FALSE, exc = FALSE,
                           decr.inc = NULL, decr.exc = NULL){
+    properties(data, class = "data.frame")
+    properties(surv, class = c("NULL", "character", "data.frame"))
+    properties(main, class = "character", length = 1, na.ok = FALSE)
+    properties(terms, class = "character", na.ok = FALSE)
+    properties(uni, class = "logical", length = 1, na.ok = FALSE)
+    properties(full, class = "logical", length = 1, na.ok = FALSE)
+    properties(inc, class = "logical", length = 1, na.ok = FALSE)
+    properties(exc, class = "logical", length = 1, na.ok = FALSE)
+    properties(decr.inc, class = "logical", length = 1, na.ok = FALSE)
+    properties(decr.exc, class = "logical", length = 1, na.ok = FALSE)
     ## check if terms have names
     if(is.null(names(terms))) names(terms) <- terms
-    ## have data in data.frame format, so that it can keep a Surv object
-    data <- as.data.frame(data, stringsAsFactors = FALSE)
-    ## check surv argument
-    if(length(surv) == 1){
-        surv.name <- surv
-        if(class(data[[surv.name]]) != 'Surv'){
-            stop("'surv' is not a 'Surv' object in data")
+    ## check surv
+    if(is.null(surv)){
+        surv <- extract_stab_from_names(nm = names(data))
+        if(is.null(surv)){
+            stop("can not identify any surv pairs in data")
         }
-    } else if(length(surv) == 2){
-        data$outcome <- survival::Surv(time = surv[1], event = surv[2])
-        surv.name <- "outcome"
-        bnry <- setdiff(bnry, "outcome")
-        real <- setdiff(real, "outcome")
-    } else stop("'surv' argument in strange form")
+    }
+    if(is.character(surv)) surv <- create_stab(s = surv)
+    surv <- verify_stab(stab = surv, nm = names(data))
+    if(nrow(surv) > 1){
+        s <- paste0("several surv pairs can be identified, ",
+                    "we will choose the first one (",
+                    surv$label[1], ")")
+        message(s)
+        surv <- surv[1, ]
+    }
+    setDT(surv)
+    data <- as.data.table(data)
+
     ## model formula
     ffnc <- function(ts = NULL){
-        paste0(surv, " ~ ", main,
+        paste0(surv[1, paste0("survival::Surv(", time,
+                              ", ", event, ")")],
+               " ~ ", main,
                if(length(ts) != 0) " + " else NULL,
                paste0(ts, collapse = " + "))
     }

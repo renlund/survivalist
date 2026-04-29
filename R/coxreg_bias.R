@@ -5,8 +5,8 @@
 ##' Get estimates of 'true' effect given the addition of a confounder, as
 ##' calculated by \code{update_HR}.
 ##' @param data data frame
-##' @param surv name of response 'Surv'-variable in data set OR the name of the
-##'     time- and status component of a time-to-event variable
+##' @param surv an 'stab' with 1 row or, if surv pair can be identified through
+##'     the default affix, the common name (label) for the pair
 ##' @param main name of main effect (binary)
 ##' @param bnry names of binary variables to include
 ##' @param real names of continuous 'normalish' variables to include
@@ -43,51 +43,49 @@
 ##'         effect of the confounder is inversed}
 ##'
 ##' }
-##' Also, there is an attribute 'tidy' with easy to plot information.
+##' Also, there is an attribute 'tidy' with easy-to-plot information.
 ##' @export
-coxreg_bias <- function(data, surv, main,
+coxreg_bias <- function(data, surv = NULL, main,
                         bnry = NULL, real = NULL, xtra.adj = NULL,
                         bnry.manual = NULL, real.manual = NULL){
     properties(data, class = "data.frame")
-    properties(surv, class = "character", length = 1:2, na.ok = FALSE)
+    properties(surv, class = c("NULL", "character", "data.frame"))
     properties(main, class = "character", length = 1, na.ok = FALSE)
     if(!is.null(bnry)) properties(bnry, class = "character", na.ok = FALSE)
     if(!is.null(real)) properties(real, class = "character", na.ok = FALSE)
     if(!is.null(xtra.adj)) properties(xtra.adj, class = "character", na.ok = FALSE)
     if(!is.null(bnry.manual)) properties(bnry.manual, class = "list")
     if(!is.null(real.manual)) properties(real.manual, class = "list")
+    if(is.null(surv)){
+        surv <- extract_stab_from_names(nm = names(data))
+        if(is.null(surv)){
+            stop("can not identify any surv pairs in data")
+        }
+    }
+    if(is.character(surv)) surv <- create_stab(s = surv)
+    surv <- verify_stab(stab = surv, nm = names(data))
+    if(nrow(surv) > 1){
+        s <- paste0("several surv pairs can be identified, ",
+                    "we will choose the first one (",
+                    surv$label[1], ")")
+        message(s)
+        surv <- surv[1, ]
+    }
+    setDT(surv)
+    D <- as.data.table(data)
     ## must have something to work with
     if(is.null(bnry) & is.null(real) &
        is.null(bnry.manual) & is.null(real.manual)){
         stop("to much null")
     }
-    ## have data in data.frame format, so that it can keep a Surv object
-    data <- as.data.frame(data, stringsAsFactors = FALSE)
-    ## check surv argument
-    if(length(surv) == 1){
-        surv.name <- surv
-        if(class(data[[surv.name]]) != 'Surv'){
-            stop("'surv' is not a 'Surv' object in data")
-        }
-    } else if(length(surv) == 2){
-        data$outcome <- survival::Surv(time = surv[1], event = surv[2])
-        surv.name <- "outcome"
-        bnry <- setdiff(bnry, "outcome")
-        real <- setdiff(real, "outcome")
-    } else stop("'surv' argument in strange form")
-    ## limit data to what is needed ONLY if xtra.adj is NULL
-    D <- if(is.null(xtra.adj)){
-             subset(data, subset = TRUE,
-                    select = c(surv.name, main, bnry, real))
-         } else data
     ## force binary data to be 0/1
     bnry01 <- function(x){
         if(length(unique(x[!is.na(x)])) != 2) stop("some 'bnry' not binary")
         as.numeric(as.factor(x))-1
     }
-    D[, c(main, bnry)] <- lapply(D[, c(main, bnry)], bnry01)
+    D[, c(main, bnry) := lapply(.SD, bnry01), .SDcols = c(main, bnry)]
     ## guide to variables
-    g0 <- data.frame(term = c(main, bnry, real, names(bnry.manual), names(real.manual)),
+    g0 <- data.table(term = c(main, bnry, real, names(bnry.manual), names(real.manual)),
                      type = c("main",
                               rep("bnry", length(bnry)),
                               rep("real", length(real)),
@@ -97,7 +95,9 @@ coxreg_bias <- function(data, surv, main,
                                             length(c(bnry.manual, real.manual)))),
                      stringsAsFactors = FALSE)
     ## model formula
-    ftxt <- paste0(surv, " ~ ", main,
+    ftxt <- paste0(surv[1, paste0("survival::Surv(", time,
+                                  ", ", event, ")")],
+                   " ~ ", main,
                    if(!is.null(bnry)) " + " else NULL,
                    paste(bnry, collapse = " + "),
                    if(!is.null(real)) " + " else NULL,
@@ -113,69 +113,55 @@ coxreg_bias <- function(data, surv, main,
     rownames(mod) <- NULL
     ## get input stats from variables in data set
     if(!is.null(c(bnry, real))){
-        br_data <- D[, c(bnry, real)]
-        lmean <- function(X) unlist(lapply(X, mean, na.rm = TRUE))
-        tmp <- split(br_data, f = D[[main]])
-        d <- as.data.frame(lapply(tmp, lmean), check.names = FALSE)
-        names(d) <- paste0('stat', names(d))
-        d$term <- rownames(d)
-        stat <- d[, c('term', 'stat0', 'stat1')]
+        stat <- NULL
+        for(term in c(bnry, real)){ ## term = c(bnry, real)[1]
+            tmp <- D[, .(m = mean(dummy)), by = main, env = list(dummy = term)][
+                order(dummy2), env = list(dummy2 = main)]
+            s <- dcast(cbind(term, tmp), term ~ group, value.var = "m")
+            setnames(s, new = c("term", "stat0", "stat1"))
+            stat <- rbind(stat, s)
+        }
     } else stat <- NULL
     ## get input stats from manually added variables
     manual <- c(bnry.manual, real.manual)
     if(!is.null(manual)){
-        man.stat <- data.frame(term = names(manual),
+        man.stat <- data.table(term = names(manual),
                                stat0 = unlist(lapply(manual, function(x) x[2])),
                                stat1 = unlist(lapply(manual, function(x) x[3])))
-        man.mod <- data.frame(term = names(manual),
+        man.mod <- data.table(term = names(manual),
                               adjHR = unlist(lapply(manual, function(x) x[1])),
                               adjHR.l = NA,
                               adjHR.u = NA)
     } else{
         man.stat <- man.mod <- NULL
     }
-    R <- merge(g0, merge(rbind(stat, man.stat), rbind(mod, man.mod),
-                         by = "term", all = TRUE), by = "term", all = TRUE)
+    R <- merge(x = g0,
+               y = merge(x = rbind(stat, man.stat),
+                         y = rbind(mod, man.mod),
+                     by = "term", all = TRUE),
+               by = "term", all = TRUE)
     ## determine the changed effect of main when added confounder which is
     ## similar to the already existing covariates in distribution and HR
-    R$mainHRinv.u <- R$mainHRinv.l <- R$mainHRinv <-
-        R$mainHR.u <- R$mainHR.l <- R$mainHR <- rep(NA, nrow(R))
-    for(i in 1:nrow(R)){ ## i = 2
+    new_var <- c("mainHR", "mainHR.l", "mainHR.u",
+                 "mainHRinv", "mainHRinv.l", "mainHRinv.u")
+    for(term in new_var) R[, dummy := NA_real_, env = list(dummy = term)]
+    for(i in 1:nrow(R)){ ## i = 1
         if(is.na(R$type[i]) | !R$type[i] %in% c("bnry", "real")) next
-        if(R$type[i] == "bnry"){
-            foo <- function(HR, inv = FALSE){
-                update_HR(HR = HR,
-                          expG = if(inv) 1/R$adjHR[i] else R$adjHR[i],
-                          s0 = R$stat0[i],
-                          s1 = R$stat1[i],
-                          type = 'bnry')
-            }
-            est <- M$coefficients[main]
-            pm <- (qnorm(.975) * sqrt(diag(M$var)))[1]
-            R$mainHR[i] <- foo(HR = exp(est))
-            R$mainHR.l[i] <- foo(HR = exp(est - pm))
-            R$mainHR.u[i] <- foo(HR = exp(est + pm))
-            R$mainHRinv[i] <- foo(HR = exp(est), inv = TRUE)
-            R$mainHRinv.l[i] <- foo(HR = exp(est - pm), inv = TRUE)
-            R$mainHRinv.u[i] <- foo(HR = exp(est + pm), inv = TRUE)
+        foo <- function(HR, inv = FALSE){
+            update_HR(HR = HR,
+                      expG = if(inv) 1/R$adjHR[i] else R$adjHR[i],
+                      s0 = R$stat0[i],
+                      s1 = R$stat1[i],
+                      type = R$type[i])
         }
-        if(R$type[i] == "real"){
-            foo <- function(HR, inv = FALSE){
-                update_HR(HR = HR,
-                          expG = if(inv) 1/R$adjHR[i] else R$adjHR[i],
-                          s0 = R$stat0[i],
-                          s1 = R$stat1[i],
-                          type = 'real')
-            }
-            est <- M$coefficients[main]
-            pm <- (qnorm(.975) * sqrt(diag(M$var)))[1]
-            R$mainHR[i] <- foo(HR = exp(est))
-            R$mainHR.l[i] <- foo(HR = exp(est - pm))
-            R$mainHR.u[i] <- foo(HR = exp(est + pm))
-            R$mainHRinv[i] <- foo(HR = exp(est), inv = TRUE)
-            R$mainHRinv.l[i] <- foo(HR = exp(est - pm), inv = TRUE)
-            R$mainHRinv.u[i] <- foo(HR = exp(est + pm), inv = TRUE)
-        }
+        est <- M$coefficients[main]
+        pm <- (qnorm(.975) * sqrt(diag(M$var)))[1]
+        R[i, mainHR := foo(HR = exp(est))]
+        R[i, mainHR.l := foo(HR = exp(est - pm))]
+        R[i, mainHR.u := foo(HR = exp(est + pm))]
+        R[i, mainHRinv := foo(HR = exp(est), inv = TRUE)]
+        R[i, mainHRinv.l := foo(HR = exp(est - pm), inv = TRUE)]
+        R[i, mainHRinv.u := foo(HR = exp(est + pm), inv = TRUE)]
     }
     attr(R, "formula") <- ftxt
     attr(R, "tidy") <- coxreg_bias_tidy(R)

@@ -6,7 +6,7 @@
 \usage{
 coxreg_bias(
   data,
-  surv,
+  surv = NULL,
   main,
   bnry = NULL,
   real = NULL,
@@ -18,8 +18,8 @@ coxreg_bias(
 \arguments{
 \item{data}{data frame}
 
-\item{surv}{name of response 'Surv'-variable in data set OR the name of the
-time- and status component of a time-to-event variable}
+\item{surv}{an 'stab' with 1 row or, if surv pair can be identified through
+the default affix, the common name (label) for the pair}
 
 \item{main}{name of main effect (binary)}
 
@@ -64,7 +64,7 @@ the parameters specified (stat0, stat1, adjHR) was present.}
 effect of the confounder is inversed}
 
 }
-Also, there is an attribute 'tidy' with easy to plot information.
+Also, there is an attribute 'tidy' with easy-to-plot information.
 }
 \description{
 Get estimates of 'true' effect given the addition of a confounder, as

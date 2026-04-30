@@ -13,8 +13,8 @@
 ##' cbind(d, state2event(d$state))
 ##' @export
 state2event <- function(s){
-    message(paste0("The function 'state2event' is not ready for use, ",
-                   "as it does not take an 'id' into account"))
+    message(paste0("Note: The function 'state2event'  ",
+                   "does not take an 'id' into account"))
     properties(s, class = c("character", "factor"), na.ok = FALSE)
     if(!is.factor(s)) s <- factor(s)
     lev <- levels(s)

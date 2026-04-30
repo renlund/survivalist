@@ -32,8 +32,12 @@ coxreg_change <- function(data, surv = NULL, main, terms,
     properties(full, class = "logical", length = 1, na.ok = FALSE)
     properties(inc, class = "logical", length = 1, na.ok = FALSE)
     properties(exc, class = "logical", length = 1, na.ok = FALSE)
-    properties(decr.inc, class = "logical", length = 1, na.ok = FALSE)
-    properties(decr.exc, class = "logical", length = 1, na.ok = FALSE)
+    if(!is.null(decr.inc)){
+        properties(decr.inc, class = "logical", length = 1, na.ok = FALSE)
+    }
+    if(!is.null(decr.exc)){
+        properties(decr.exc, class = "logical", length = 1, na.ok = FALSE)
+    }
     ## check if terms have names
     if(is.null(names(terms))) names(terms) <- terms
     ## check surv
@@ -53,6 +57,7 @@ coxreg_change <- function(data, surv = NULL, main, terms,
         surv <- surv[1, ]
     }
     setDT(surv)
+    return_dt <- return_data.table(is.data.table(data))
     data <- as.data.table(data)
 
     ## model formula
@@ -186,10 +191,28 @@ coxreg_change <- function(data, surv = NULL, main, terms,
         rownames(EXC) <- NULL
     }
     ## return list of results
-    L <- as.list(NULL)
-    if(uni) L$univariate <- UNI
-    if(full) L$full <- FULL
-    if(inc) L$sequential_inclusion <- INC
-    if(exc) L$sequential_exclusion <- EXC
-    L
+    ## L <- as.list(NULL)
+    ## if(uni) L$univariate <- UNI
+    ## if(full) L$full <- FULL
+    ## if(inc) L$sequential_inclusion <- INC
+    ## if(exc) L$sequential_exclusion <- EXC
+    ## L
+    L <- NULL
+    if(uni){
+        setDT(UNI)
+        L <- rbind(L, UNI[, change := "univariate"])
+    }
+    if(full){
+        setDT(FULL)
+        L <- rbind(L, FULL[, change := "full"])
+    }
+    if(inc){
+        setDT(INC)
+        L <- rbind(L, INC[, change := "sequential_inclusion"])
+    }
+    if(exc){
+        setDT(EXC)
+        L <- rbind(L, EXC[, change := "sequential_exclusion"])
+    }
+    if(return_dt) L[] else as.data.frame(L)
 }

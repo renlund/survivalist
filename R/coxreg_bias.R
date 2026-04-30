@@ -117,7 +117,9 @@ coxreg_bias <- function(data, surv = NULL, main,
         for(term in c(bnry, real)){ ## term = c(bnry, real)[1]
             tmp <- D[, .(m = mean(dummy)), by = main, env = list(dummy = term)][
                 order(dummy2), env = list(dummy2 = main)]
-            s <- dcast(cbind(term, tmp), term ~ group, value.var = "m")
+            s <- dcast(data = cbind(term, tmp),
+                       formula = as.formula(paste0("term ~ ", main)),
+                       value.var = "m")
             setnames(s, new = c("term", "stat0", "stat1"))
             stat <- rbind(stat, s)
         }
@@ -140,6 +142,8 @@ coxreg_bias <- function(data, surv = NULL, main,
                          y = rbind(mod, man.mod),
                      by = "term", all = TRUE),
                by = "term", all = TRUE)
+    R$stat0[R$term == main] <- 0
+    R$stat1[R$term == main] <- 1
     ## determine the changed effect of main when added confounder which is
     ## similar to the already existing covariates in distribution and HR
     new_var <- c("mainHR", "mainHR.l", "mainHR.u",
@@ -213,6 +217,8 @@ coxreg_bias_tidy <- function(x){
     A$alt <- "(No U)"
     A <- A[, c("term", "alt", "eff", "adjHR", "adjHR.l", "adjHR.u")]
     names(A)[4:6] <- c("HR", "ci1", "ci2")
+    A2 <- A
+    A2$eff <- 'Inverse effect'
     ## get as-is effect of main with U's added
     B <- subset(x, x$type %in% c("bnry", "real"))
     B$eff <- 'Effect as-is'
@@ -226,7 +232,7 @@ coxreg_bias_tidy <- function(x){
     C <- C[, c("term", "alt", "eff", "mainHRinv", "mainHRinv.l", "mainHRinv.u")]
     names(C)[4:6] <- c("HR", "ci1", "ci2")
     ## rbind
-    R <- rbind(A, B, C)
+    R <- rbind(A, B, A2, C)
     ## give lists of orders as attribute
     attr(R, "orders") <- list(
         "asis_dec" = B[order(B$HR, decreasing = TRUE), "alt", drop = TRUE],

@@ -398,20 +398,162 @@ cap <- paste0("Adjusted hazard ratio for main effect when adjusting ",
               "specified in the figure.")
 @
 
+
 \clearpage
 %% =============================================================================
-\subsection{Miscellanous helpers mostly for time dependent covariates}
+\subsection{Helpers for time-dependent covariates}
 
-Maybe document these functions here at some point:
+It is the authors firm opinion that it is generally much easier to assemble your
+time-dependent data set with a global clock, i.e. all variables related to time
+is the same - even though we often want individual clocks (typically each
+subject starts with \texttt{tstart = 0}) at a later stage.
 
-\begin{itemize}
-\item \texttt{event1trunc}
-\item \texttt{tstart2zero}
-\item \texttt{time\_num2date} and \texttt{time\_date2num}
-\item \texttt{cbin}
-\item \texttt{state2event}
-\item \texttt{tdc\_statistic}, \texttt{tdc\_calculator}, and \texttt{tdc\_count}
-\end{itemize}
+<<"tdc-raw", echo = FALSE>>=
+POP <- rowwiseDT(
+    id=,       entry=,        exit=,
+      1, "2020-01-11", "2020-04-10",
+      2, "2020-01-21", "2020-07-19"
+)
+POP[, `:=`(entry = as.Date(entry), exit = as.Date(exit))]
+FOO <- rowwiseDT(
+    id=,        date=,
+      1, "2020-01-31",
+      1, "2020-03-11",
+      2, "2020-05-30"
+)
+FOO[, `:=`(date = as.Date(date))]
+MED <- rowwiseDT(
+    id=,        date=, med=,
+      1, "2019-12-27",  "A",
+      1, "2020-02-20",  "B",
+      2, "2020-01-01",  "B",
+      2, "2020-01-31",  "C",
+      2, "2020-02-05",  "B"
+)
+MED[, `:=`(date = as.Date(date))]
+@
 
+So we have data on the toy study population
+
+<<"tdc-pop">>=
+print(POP)
+@
+
+and the events
+
+<<"tdc-foo">>=
+print(FOO)
+@
+
+as well as medications
+
+<<"tdc-med">>=
+print(MED)
+@
+
+Now, one could work with dates directly, but integers are easier to grasp and
+takes up less space.
+
+<<"tdc-data-0">>=
+.d0 <- as.Date("2020-01-01")
+POP[, `:=`(tstart = time_date2num(entry, ref = .d0),
+           tstop = time_date2num(exit, ref = .d0))][]
+FOO[, `:=`(t = time_date2num(date, ref = .d0))][]
+MED[, `:=`(t = time_date2num(date, ref = .d0))][]
+@
+
+Now we use \texttt{survival::tmerge} to build the data set
+
+<<"tdc-data">>=
+T0 <- tmerge(POP, POP, id = id, tstart = tstart, tstop = tstop)
+T1 <- tmerge(T0, FOO, id = id, foo = event(t))
+T2 <- tmerge(T1, MED, id = id, drug = tdc(t, med, init = ""))
+T2
+@
+
+\newpage
+We might be interested in going back to working with dates at some point
+
+<<"tdc-time-revert">>=
+as.data.table(T2)[, `:=`(entry = NULL, exit = NULL,
+                         dstart = time_num2date(tstart, ref = .d0),
+                         dstop = time_num2date(tstop, ref = .d0))][]
+@
+
+Even though resetting each subjects clock to start at 0 is easy, there is a
+function to that end
+
+<<"tdc-reset-time">>=
+(T3 <- tstart2zero(T2, id = "id"))
+@
+
+In this data set we allow multiple instances of the event 'foo'. Often we only
+follow subjects until the first occurence.
+
+<<"tdc-truncate-at-first-event">>=
+event1trunc(T3, id = "id", event = "foo")
+@
+
+Other times, one might be interested in converting states to events
+
+<<"tdc-state2evet">>=
+state2event(state = "drug", by = "id", data = T3)
+@
+
+although note that these 'events' does not survive further applications of
+\texttt{tmerge}, for that you have to utilize \texttt{tmerge} itself.
+
+\clearpage
+%% =============================================================================
+\subsection{Describing time-dependent covariates}
+
+There are a couple of functions to describe the evolution of time-dependent
+variable on the population level.
+
+Here is a toy data set on 3 subjects and their treatment (\texttt{trt} 0/1) and
+more specifically \emph{type} (\texttt{type} A/B) of treatment
+
+<<"desc-tdc-data">>=
+POP <- data.table(id = 1:3, tstart = 0, tstop = 100)
+S <- rowwiseDT(
+    id=, t=, trt=, type=,
+    1,    5,    1,   "A",
+    2,   10,    1,   "A",
+    3,   15,    1,   "A",
+    1,   20,    0,   " ",
+    2,   25,    0,   " ",
+    1,   25,    1,   "B",
+    3,   30,    0,   " ",
+    2,   30,    1,   "B",
+    3,   35,    1,   "B"
+)
+T0 <- tmerge(POP, POP, id = id, tstart = tstart, tstop = tstop)
+(T1 <- tmerge(T0, S, id = id, trt = tdc(t, trt, init = 0)))
+@
+
+\newpage
+The function \texttt{tdc\_statistic} can be used to create a statistic for a
+single variable, you need to specify the variable as well as supply a function
+that takes a single vector input.
+
+<<"desc-tdc-1">>=
+tdc_statistic(T1, var = "trt", FUN = mean)
+tdc_statistic(T1, var = "trt", FUN = \(x){
+    c(mean = mean(x), sum = sum(x))
+})
+@
+
+\newpage
+The function \texttt{tdc\_calculator} is more general; it takes a function that
+takes a data frame as input.
+
+<<"desc-tdc-2">>=
+(T2 <- tmerge(T1, S, id = id, type = tdc(t, type, init = " ")))
+tdc_calculator(T2, FUN = \(d){
+    with(d, data.frame(trt = sum(trt),
+                       A = sum(type == "A"),
+                       B = sum(type == "B")))
+})
+@
 
 \end{document}

@@ -220,3 +220,94 @@ cap <- paste0("Adjusted hazard ratio for main effect when adjusting ",
               "for age and sex, as well as a confounder U ",
               "specified in the figure.")
 
+## ----"tdc-raw", echo = FALSE--------------------------------------------------
+POP <- rowwiseDT(
+    id=,       entry=,        exit=,
+      1, "2020-01-11", "2020-04-10",
+      2, "2020-01-21", "2020-07-19"
+)
+POP[, `:=`(entry = as.Date(entry), exit = as.Date(exit))]
+FOO <- rowwiseDT(
+    id=,        date=,
+      1, "2020-01-31",
+      1, "2020-03-11",
+      2, "2020-05-30"
+)
+FOO[, `:=`(date = as.Date(date))]
+MED <- rowwiseDT(
+    id=,        date=, med=,
+      1, "2019-12-27",  "A",
+      1, "2020-02-20",  "B",
+      2, "2020-01-01",  "B",
+      2, "2020-01-31",  "C",
+      2, "2020-02-05",  "B"
+)
+MED[, `:=`(date = as.Date(date))]
+
+## ----"tdc-pop"----------------------------------------------------------------
+print(POP)
+
+## ----"tdc-foo"----------------------------------------------------------------
+print(FOO)
+
+## ----"tdc-med"----------------------------------------------------------------
+print(MED)
+
+## ----"tdc-data-0"-------------------------------------------------------------
+.d0 <- as.Date("2020-01-01")
+POP[, `:=`(tstart = time_date2num(entry, ref = .d0),
+           tstop = time_date2num(exit, ref = .d0))][]
+FOO[, `:=`(t = time_date2num(date, ref = .d0))][]
+MED[, `:=`(t = time_date2num(date, ref = .d0))][]
+
+## ----"tdc-data"---------------------------------------------------------------
+T0 <- tmerge(POP, POP, id = id, tstart = tstart, tstop = tstop)
+T1 <- tmerge(T0, FOO, id = id, foo = event(t))
+T2 <- tmerge(T1, MED, id = id, drug = tdc(t, med, init = ""))
+T2
+
+## ----"tdc-time-revert"--------------------------------------------------------
+as.data.table(T2)[, `:=`(entry = NULL, exit = NULL,
+                         dstart = time_num2date(tstart, ref = .d0),
+                         dstop = time_num2date(tstop, ref = .d0))][]
+
+## ----"tdc-reset-time"---------------------------------------------------------
+(T3 <- tstart2zero(T2, id = "id"))
+
+## ----"tdc-truncate-at-first-event"--------------------------------------------
+event1trunc(T3, id = "id", event = "foo")
+
+## ----"tdc-state2evet"---------------------------------------------------------
+state2event(state = "drug", by = "id", data = T3)
+
+## ----"desc-tdc-data"----------------------------------------------------------
+POP <- data.table(id = 1:3, tstart = 0, tstop = 100)
+S <- rowwiseDT(
+    id=, t=, trt=, type=,
+    1,    5,    1,   "A",
+    2,   10,    1,   "A",
+    3,   15,    1,   "A",
+    1,   20,    0,   " ",
+    2,   25,    0,   " ",
+    1,   25,    1,   "B",
+    3,   30,    0,   " ",
+    2,   30,    1,   "B",
+    3,   35,    1,   "B"
+)
+T0 <- tmerge(POP, POP, id = id, tstart = tstart, tstop = tstop)
+(T1 <- tmerge(T0, S, id = id, trt = tdc(t, trt, init = 0)))
+
+## ----"desc-tdc-1"-------------------------------------------------------------
+tdc_statistic(T1, var = "trt", FUN = mean)
+tdc_statistic(T1, var = "trt", FUN = \(x){
+    c(mean = mean(x), sum = sum(x))
+})
+
+## ----"desc-tdc-2"-------------------------------------------------------------
+(T2 <- tmerge(T1, S, id = id, type = tdc(t, type, init = " ")))
+tdc_calculator(T2, FUN = \(d){
+    with(d, data.frame(trt = sum(trt),
+                       A = sum(type == "A"),
+                       B = sum(type == "B")))
+})
+

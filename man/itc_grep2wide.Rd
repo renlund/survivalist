@@ -20,6 +20,7 @@ match associated with \code{first.id == 1} turned into variables
 'event' associated with \code{first.id == 1}
 }
 \description{
-Apply \code{data.table::dcast} to turn the result from itc_grep into wide format
-(one row per {id, begin, end}) with time and event component for each alias.
+Apply \code{data.table::dcast} to turn the result from itc_grep into wide
+format (one row per: id, begin, end) with time and event component for each
+alias.
 }

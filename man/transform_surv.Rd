@@ -46,6 +46,9 @@ measured in years (rescale_surv)}
 \item{trunc}{numeric, the time to truncate at (truncate_surv)}
 
 \item{landmark}{numeric, the time at which to landmark (landmark_surv)}
+
+\item{reset}{logical; when landmarking, should landmark time be reset to
+zero?}
 }
 \description{
 Different functions for transforming surv variables: combine, truncate,

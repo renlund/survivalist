@@ -17,31 +17,24 @@
 ##' @param real.manual additional real confounders not in model, named list
 ##'     where each element is HR, mean at \code{main == 0}, mean at \code{main
 ##'     == 1}
-##' @return a data.frame with entries \itemize{
-##'
+##' @importFrom stats formula as.formula setNames qnorm
+##' @return a data.frame with entries
+##' \describe{
 ##'  \item{"term"}{The term (variable)}
-##'
 ##'  \item{"type"}{Type of variable: main (the main effect), bnry (binary), real
 ##'                (continuous). Terms added via 'xtra.adj' will have NA here.}
-##'
 ##'  \item{"manual"}{Indicator for 'manually added' variables, i.e. hypothesized
 ##'         variables.}
-##'
 ##'  \item{"stat0"}{Mean value for variable at main = 0}
-##'
 ##'  \item{"stat1"}{Mean value for variable at main = 1}
-##'
 ##'  \item{"adjHR (adjHR.l, adjHR.u)"}{The HR (lower, upper CI) in an adjusted
 ##'         model (terms specified by bnry, real, and xtra.adj). Note: values
 ##'         are included here for the 'manual' terms although they do not
 ##'         actually appear in the model. }
-##'
 ##'  \item{"mainHR (mainHR.l, mainHR.u)"}{The HR for main if a confounder with
 ##'         the parameters specified (stat0, stat1, adjHR) was present.}
-##'
 ##'  \item{"mainHRinv (mainHRinv.l, mainHRinv.u)"}{Similar to 'mainHR' but the
 ##'         effect of the confounder is inversed}
-##'
 ##' }
 ##' Also, there is an attribute 'tidy' with easy-to-plot information.
 ##' @export

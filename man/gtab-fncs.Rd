@@ -40,7 +40,9 @@ gtab2factor(gtab, na.ok = FALSE, verbose = FALSE)
 
 \item{n}{optional; number of rows wanted}
 
-\item{na.ok}{logical; when considering a gtab as a factor, are missing
+\item{na.ok}{logical; when considering a gtab as a factor, are missing}
+
+\item{verbose}{logical; print stuff
 values permissible?}
 }
 \description{

@@ -6,6 +6,8 @@
 ##' @param new.names character; labels for variables
 ##' @param ggcode logical; print example code (ggplot) for creating the splom?
 ##' @return list with 2 data frames
+##' @importFrom stats cor
+##' @importFrom colorspace diverge_hcl
 ##' @examples
 ##' N  <- 100
 ##' x <- data.frame(foo = rnorm(N, 10, 1))

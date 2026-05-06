@@ -13,10 +13,13 @@ test_that("combine_surv works", {
     sl <- data.frame(label = c("S1", "S2"),
                      time = c("X_t", "Y_t"),
                      event = c("X_e", "Y_e"))
-    cs <- combine_surv(surv = sl,
-                       data = d,
-                       id = "the_id",
-                       nm = c("A", "B"))
+    expect_warning({
+        cs <- combine_surv(surv = sl,
+                           data = d,
+                           id = "the_id",
+                           nm = c("A", "B"))
+    })
+
     r <- data.frame(
         the_id = 1:5,
         A = c(10,10,9,8,7),

@@ -41,7 +41,6 @@
 ##' @param simplify logical; if breaks are given, then simplify = TRUE keep only
 ##'     minimal information enough to keep track of changes in categorized
 ##'     burden.
-##' @seealso \code{\link{pill_duration}}
 ##' @return If no simplification has been asked for you get a  data.frame
 ##'  \itemize{
 ##'  \item{"id"}{ id variable}

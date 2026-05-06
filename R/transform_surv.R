@@ -14,6 +14,9 @@
 ##'     surv calculated and id (if specified)?
 ##' @param trunc numeric, the time to truncate at (truncate_surv)
 ##' @param landmark numeric, the time at which to landmark (landmark_surv)
+##' @param reset logical; when landmarking, should landmark time be reset to
+##'     zero?
+##' @import data.table
 ##' @name transform_surv
 NULL
 
@@ -185,63 +188,4 @@ landmark_surv <- function(surv = NULL, data, landmark, id = NULL, strip = TRUE,
         data[, vs, with = FALSE]
     } else data
     if(return_dt) r else as.data.frame(r)
-}
-
-
-
-if(FALSE){
-
-    data <- data.frame(
-        the_id = 1:3,
-        X_t = c(10, 7, 5),
-        X_e = c( 1, 0, 1),
-        Y_t = c(10, 7, 9),
-        Y_e = c( 0, 1, 0),
-        noise = letters[1:3]
-    )
-    surv <- data.frame(label = c("theX", "theY"),
-                       time = c("X_t", "Y_t"),
-                       event = c("X_e", "Y_e"))
-    trunc = 8
-    id = "the_id"
-    strip = FALSE
-
-    Survclass_surv(surv, data)
-    Survclass_surv(surv, data, strip = FALSE)
-
-    data <- data.frame(
-        id = 1:7,
-        foo_t =  c(10,10,10,7,9,5,5),
-        foo_ev = c(0,0,0,1,1,1,0),
-        bar_t =  c(9,10,8,10,6,5,6),
-        bar_ev = c(0,0,1,0,1,1,1)
-    )
-
-    surv <- data.frame(label = c("Foo", "Bar"),
-                       time = c("foo_t", "bar_t"),
-                       event = c("foo_ev", "bar_ev"))
-    combine_surv(surv = surv,
-                 data = data,
-                 id = "id",
-                 nm = c("Comb_t", "Comb_ev"))
-    as.data.table(data)[, (surv_nm("Comb")) :=(
-                     combine_surv(surv = surv,
-                                   data = .SD)
-    )]
-
-    rescale_surv(surv = surv,
-                 data = data,
-                 FUN = function(x) 10*x,
-                 strip = FALSE)
-
-    truncate_surv(surv = surv,
-                  data = data,
-                  trunc = 8,
-                  strip = FALSE)
-    landmark_surv(surv = surv,
-                  data = data,
-                  landmark = 6,
-                  strip = FALSE)
-
-
 }

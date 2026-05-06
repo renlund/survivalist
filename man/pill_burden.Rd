@@ -117,6 +117,3 @@ use this directly, there are no checks or warnings of any kind with this
 function
 
 }}
-\seealso{
-\code{\link{pill_duration}}
-}

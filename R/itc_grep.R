@@ -187,8 +187,9 @@ itc_grep <- function(pattern, x, data, id, date,
 
 ##' widen itc_grep result
 ##'
-##' Apply \code{data.table::dcast} to turn the result from itc_grep into wide format
-##' (one row per {id, begin, end}) with time and event component for each alias.
+##' Apply \code{data.table::dcast} to turn the result from itc_grep into wide
+##' format (one row per: id, begin, end) with time and event component for each
+##' alias.
 ##' @param x the return object from \code{itc_grep}
 ##' @param event.only logical; event only data, else time and event components
 ##'     for each alias

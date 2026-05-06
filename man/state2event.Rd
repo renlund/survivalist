@@ -30,5 +30,5 @@ model.
 d <- data.frame(id=1, tstart = 0:7, tstop = 1:8,
                 state = factor(LETTERS[c(1,1,2,1,1,3,2,2)],
                                levels = LETTERS[4:1]))
-state2event("state", id = "id", data = d)
+state2event("state", by = "id", data = d)
 }

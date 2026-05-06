@@ -79,6 +79,8 @@ might want to merge this information with a "variable table" (vtab).)}
 
 \item{nm}{character vector; typically the names of variables in a data set}
 
+\item{warn}{logical; warn when stuff does not add up}
+
 \item{group.name}{character; name of grouping for surv variables}
 
 \item{vtab}{data.frame; a "variable table" (vtab)}

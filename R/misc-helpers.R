@@ -206,7 +206,7 @@ tstart2zero <- function(data, id = "id", tstart = "tstart", tstop = "tstop"){
 ##' @param event character; name of event variable
 ##' @examples
 ##' d <- data.frame(id=1,t1=c(0,5,10,15),t2=c(5,10,15,20),foo=c(0,0,1,0))
-##' first_event_truncation(d, event = "foo")
+##' event1trunc(d, event = "foo")
 ##' @export
 event1trunc <- function(data, id = "id", event){
     properties(data, class = "data.frame")

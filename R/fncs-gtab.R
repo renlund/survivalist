@@ -9,6 +9,7 @@
 ##' @param gtab data.frame; a "grouping table" (gtab)
 ##' @param n optional; number of rows wanted
 ##' @param na.ok logical; when considering a gtab as a factor, are missing
+##' @param verbose logical; print stuff
 ##' values permissible?
 ##' @name gtab-fncs
 NULL

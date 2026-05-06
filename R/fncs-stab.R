@@ -15,6 +15,7 @@
 ##' @param nm character vector; typically the names of variables in a data set
 ##' @param vtab data.frame; a "variable table" (vtab)
 ##' @param group.name character; name of grouping for surv variables
+##' @param warn logical; warn when stuff does not add up
 ##' @name stab-fncs
 NULL
 

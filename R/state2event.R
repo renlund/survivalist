@@ -3,40 +3,97 @@
 ##' For each state in 's', create indicator variables for the state
 ##' changes. This might be useful e.g. when setting up data for a multistate
 ##' model.
-##' @param s a factor of states
-##' @return a data frame with indicators (named as the levels of s) for state
+##' @param state character; name of variable keeping track of a changing state
+##' @param by character (vector); name(s) of variable(s) to do calculation 'by'
+##'     (typically the id variable)
+##' @param data a data frame or similar
+##' @param by.ref logical; if data is data.table then TRUE here means defining
+##'     variables by reference
+##' @return the input data frame with indicators added (named as the levels of s) for state
 ##'     changes
 ##' @examples
 ##' d <- data.frame(id=1, tstart = 0:7, tstop = 1:8,
 ##'                 state = factor(LETTERS[c(1,1,2,1,1,3,2,2)],
 ##'                                levels = LETTERS[4:1]))
-##' cbind(d, state2event(d$state))
+##' state2event("state", id = "id", data = d)
 ##' @export
-state2event <- function(s){
-    message(paste0("Note: The function 'state2event'  ",
-                   "does not take an 'id' into account"))
-    properties(s, class = c("character", "factor"), na.ok = FALSE)
-    if(!is.factor(s)) s <- factor(s)
-    lev <- levels(s)
-    if(length(lev) == 0) stop("'s' has no levels")
-    mall <- rep(0L, length(s))
-    null.list <- as.list(NULL)
-    ut <- lapply(lev, function(z){ null.list[[z]] <- mall})
-    names(ut) <- levels(s)
-    r <- rle(as.character(s))
-    v <- r$values
-    R <- if(length(v) == 1){
-        as.data.frame(ut, check.names = FALSE)
-    } else{
-        l <- r$lengths
-        n <- length(l)
-        lc <- stats::setNames(object = cumsum(l)[-n], nm = v[-1])
-        for(i in lev){
-            index <- which(names(lc) == i)
-            ut[[i]][lc[index]] <- 1L
-        }
-        as.data.frame(ut, check.names = FALSE)
+state2event <- function(state, by = "id", data, by.ref = FALSE){
+    properties(state, class = "character", length = 1, na.ok = FALSE)
+    if(!is.null(by)) properties(by, class = "character", na.ok = FALSE)
+    properties(by.ref, class = "logical", length = 1, na.ok = FALSE)
+    properties(data, class = "data.frame")
+    inclusion(names(data), "the names of data", include = c(state, by))
+    return_dt <- TRUE
+    if(!is.data.table(data)){
+        return_dt <- FALSE
+        data <- as.data.table(data)
+        if(by.ref) message("by.ref TRUE is useless unless data is data.table")
+        by.ref <- FALSE
+    } else {
+        if(!by.ref) data <- copy(data)
     }
-    return_dt <- return_data.table()
-    if(return_dt) R else as.data.frame(R)
+    if(data[,  any(is.na(dummy)), env = list(dummy = state)]){
+        stop("don't want to handle missing in 'state'")
+    }
+    v <- data[, values(dummy), env = list(dummy = state)]
+    data[, (v) := event_frame(x = dummy, val = v, bnry = TRUE),
+         by = eval(as.character(by)),
+         env = list(dummy = state)]
+    if(by.ref){
+        invisible(data)
+    } else {
+        if(return_dt) data[] else as.data.frame(data)
+    }
+}
+
+if(FALSE){
+    d1 <- data.frame(id=1, tstart = 0:7, tstop = 1:8,
+                    state = factor(LETTERS[c(1,1,2,1,1,3,2,2)],
+                                   levels = LETTERS[4:1]))
+    d2 <- data.frame(id=2, tstart = 0:7, tstop = 1:8,
+                    state = factor(LETTERS[c(2,2,2,1,1,3,3,3)],
+                                   levels = LETTERS[4:1]))
+    d <- rbind(d1,d2)
+    state2event("state", by = "id", data = d)
+
+}
+
+state_indicator <- function(val, x, bnry = TRUE){
+    if(bnry) as.integer(x == val) else x == val
+}
+
+change_indicator <- function(val, x, bnry = TRUE){
+    si <- state_indicator(val = val, x = x, bnry = FALSE)
+    lag_si <- shift(si, n = 1, fill = TRUE, type = "lag")
+    if(bnry) as.integer(si & !lag_si) else si & !lag_si
+}
+
+event_indicator <- function(val, x, bnry = TRUE){
+    shift(x = change_indicator(val = val, x = x, bnry = bnry),
+          n = 1, fill = FALSE, type = "lead")
+}
+
+values <- function(x){
+    if(is.factor(x)) levels(x) else sort(unique(x[!is.na(x)]))
+}
+
+state_frame <- function(x, val = NULL, bnry = TRUE){
+    u <- if(is.null(val)) values(x) else val
+    r <- as.data.table(lapply(u, FUN = state_indicator, x = x, bnry = bnry))
+    setnames(r, new = u)
+    r[]
+}
+
+change_frame <- function(x, val = NULL, bnry = TRUE){
+    u <- if(is.null(val)) values(x) else val
+    r <- as.data.table(lapply(u, FUN = change_indicator, x = x, bnry = bnry))
+    setnames(r, new = u)
+    r[]
+}
+
+event_frame <- function(x, val = NULL, bnry = TRUE){
+    u <- if(is.null(val)) values(x) else val
+    r <- as.data.table(lapply(u, FUN = event_indicator, x = x, bnry = bnry))
+    setnames(r, new = u)
+    r[]
 }

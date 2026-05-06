@@ -4,13 +4,21 @@
 \alias{state2event}
 \title{create indicators for state change}
 \usage{
-state2event(s)
+state2event(state, by = "id", data, by.ref = FALSE)
 }
 \arguments{
-\item{s}{a factor of states}
+\item{state}{character; name of variable keeping track of a changing state}
+
+\item{by}{character (vector); name(s) of variable(s) to do calculation 'by'
+(typically the id variable)}
+
+\item{data}{a data frame or similar}
+
+\item{by.ref}{logical; if data is data.table then TRUE here means defining
+variables by reference}
 }
 \value{
-a data frame with indicators (named as the levels of s) for state
+the input data frame with indicators added (named as the levels of s) for state
 changes
 }
 \description{
@@ -22,5 +30,5 @@ model.
 d <- data.frame(id=1, tstart = 0:7, tstop = 1:8,
                 state = factor(LETTERS[c(1,1,2,1,1,3,2,2)],
                                levels = LETTERS[4:1]))
-cbind(d, state2event(d$state))
+state2event("state", id = "id", data = d)
 }

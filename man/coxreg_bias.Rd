@@ -35,7 +35,7 @@ where each element is HR, proportion at \code{main == 0}, proportion at
 
 \item{real.manual}{additional real confounders not in model, named list
 where each element is HR, mean at \code{main == 0}, mean at \code{main
-    == 1}}
+== 1}}
 }
 \value{
 a data.frame with entries

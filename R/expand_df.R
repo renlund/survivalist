@@ -1,8 +1,12 @@
-levelled_factor <- function(x){
+levelled_factor <- function(x, force.factor = FALSE){
     if(!is.factor(x)){
         ## message("input is not a factor")
         u <- sort(unique(x[!is.na(x)]))
-        if(length(u) > 0) factor(u, levels = u) else factor(character(0))
+        if(force.factor){
+            if(length(u) > 0) factor(u, levels = u) else factor(character(0))
+        } else {
+            if(length(u) > 0) u else character(0)
+        }
     } else {
         l <- levels(x)
         factor(l, levels = l)
@@ -29,7 +33,7 @@ levelled_factor <- function(x){
 expand_df <- function(data, factors){
     L <- as.list(NULL)
     for(i in seq_along(factors)){
-        L[[i]] <- levelled_factor(data[[factors[i]]])
+        L[[i]] <- levelled_factor(data[[factors[i]]], force.factor = FALSE)
     }
     D <- as.data.table(data)
     EG <- as.data.table(expand.grid(L))

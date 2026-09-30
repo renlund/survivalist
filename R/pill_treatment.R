@@ -64,7 +64,9 @@ pill_treatment <- function(data, id = "id", t = "t", state = "state",
                length = 1, na.ok = FALSE)
     properties(null.state, length = 1, na.ok = FALSE)
     properties(simplify, class = "logical", length = 1, na.ok = FALSE)
-
+    if(any(data[[pills]] <= 0)){
+        stop("there are 'pills' values <= 0")
+    }
     ## return_dt <- is.data.table(data)
     return_dt <- return_data.table(is.data.table(data))
     uchar <- is.character(usage)
@@ -133,9 +135,9 @@ pill_treatment_calculator <- function(data, null.state = "", simplify = TRUE){
     N <- data[, t[.N] - t[1] + 1 + sum(ceiling(pills / usage))]
     y <- data.table(id = data$id[1], t = data$t[1] + 0:(N-1), pills = 0L)
     y[data, `:=`(state = i.state,
-              pills = i.pills,
-              usage = i.usage,
-              capacity = i.capacity), on = "t"]
+                 pills = i.pills,
+                 usage = i.usage,
+                 capacity = i.capacity), on = "t"]
     y[, `:=`(state = locf(state),
              usage = locf(usage),
              capacity = locf(capacity))]

@@ -41,5 +41,5 @@ proxcond <- function(data, id, ..., prox = c(Inf,Inf)){
     } else R <- dt[rep(FALSE, .N)]
     R[, c(".row", ".rowid", ".maxrowid") := NULL]
     setnames(R, old = ".id", new = id)
-    if(return_dt) R else as.data.frame(R)
+    if(return_dt) R[] else as.data.frame(R)
 }

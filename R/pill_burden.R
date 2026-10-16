@@ -125,8 +125,12 @@ pill_burden <- function(data,
     req_nm <- c(id, t, pills,
                 if(uchar) usage else NULL,
                 if(cchar) capacity else NULL)
+    new_nm <- c("id", "t", "pills",
+                if(uchar) "usage" else NULL,
+                if(cchar) "capacity" else NULL)
     inclusion(names(data), nm = "data", include = req_nm)
     D <- as.data.table(data)[, req_nm, with = FALSE]
+    setnames(D, old = req_nm, new = new_nm)
     if(!uchar){
         req_nm <- c(req_nm, "usage")
         D[, usage := usage]
@@ -156,8 +160,6 @@ pill_burden <- function(data,
         warning(s)
         D <- D[t <= horizon]
     }
-    setnames(D, old = req_nm,
-             new = c("id", "t", "pills", "usage", "capacity"))
     setkey(D, id, t) ## this orders the data accordingly
     R <- rbindlist(l = lapply(X = split(D, f = D$id),
                               FUN = pill_burden_calculator,
@@ -169,7 +171,7 @@ pill_burden <- function(data,
                               break.labels = break.labels,
                               simplify = simplify))
     setnames(R, old = c("id", "t"),
-             new = c(id, t))
+             new = c(id, t), skip_absent = TRUE)
     if(return_dt) R else as.data.frame(R)
 }
 

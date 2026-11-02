@@ -41,11 +41,14 @@ idwidi <- function(data, id = "id", by.ref = NULL){
                     "{", paste0(nm_dup, collapse = ", "), "}")
     }
     setnames(d, old = nm, new = nm_low)
+    id <- tolower(id)
     d[, .rid := 1:.N]
     term1 <- c(id, "atc", "edatum", "antnum", "styrkalf")
     term2 <- c(term1, "antal", ".rid")
     inclusion(names(d), nm = "(lowercase) names of data", include = term2)
-    setorder(d, id, atc, edatum, antnum, styrkalf, -antal)
+    ## setorder(d, id, atc, edatum, antnum, styrkalf, -antal)
+    setorderv(d, cols = c(term1, "antal"),
+              order = rep(c(1,-1), c(length(term1), 1)))
     ## get to work
     if(d[, any(antal == 0)]){
         message("rows with antal == 0 exists")
@@ -54,8 +57,9 @@ idwidi <- function(data, id = "id", by.ref = NULL){
     d1[, antal := -antal]
     setnames(d1, old = ".rid", new = ".did")
     d2 <- d[antal > 0, term2, with = FALSE]
-    M <- d2[d1, on = .(id, atc, antnum, styrkalf, antal, edatum), roll = Inf, mult = "last"]
-    if(M[, any(.rid == .did)]){
+    M <- d2[d1, on = c(id, "atc", "antnum", "styrkalf", "antal", "edatum"),
+            roll = Inf, mult = "last"]
+    if(M[, any(.rid == .did, na.rm = TRUE)]){
         warning("if you see this - run!")
     }
     d[M, .did := i..did, on = ".rid"]

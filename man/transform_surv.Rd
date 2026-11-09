@@ -43,7 +43,10 @@ surv calculated and id (if specified)?}
 components are originally measured in days and you want them to be
 measured in years (rescale_surv)}
 
-\item{trunc}{numeric, the time to truncate at (truncate_surv)}
+\item{trunc}{numeric or character; the time to truncate at
+(truncate_surv). If numeric: either a universal truncation (length 1) or
+individual truncation (length of data). If character: the name of a
+variable in the data that serves as truncation.}
 
 \item{landmark}{numeric, the time at which to landmark (landmark_surv)}
 

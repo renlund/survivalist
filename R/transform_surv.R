@@ -12,7 +12,10 @@
 ##'     measured in years (rescale_surv)
 ##' @param strip logical, strip everything from data apart from the combined
 ##'     surv calculated and id (if specified)?
-##' @param trunc numeric, the time to truncate at (truncate_surv)
+##' @param trunc numeric or character; the time to truncate at
+##'     (truncate_surv). If numeric: either a universal truncation (length 1) or
+##'     individual truncation (length of data). If character: the name of a
+##'     variable in the data that serves as truncation.
 ##' @param landmark numeric, the time at which to landmark (landmark_surv)
 ##' @param reset logical; when landmarking, should landmark time be reset to
 ##'     zero?
@@ -100,7 +103,22 @@ shuffle <- function(x, y){
 truncate_surv <- function(surv = NULL, data, trunc, id = NULL, strip = TRUE){
     properties(surv, class = c("NULL", "character", "data.frame"))
     properties(data, class = "data.frame")
-    properties(trunc, class = c("numeric", "integer"), length = 1, na.ok = FALSE)
+    n <- nrow(data)
+    properties(trunc, length = c(1, n), na.ok = FALSE)
+    if(length(trunc) == n){
+        properties(trunc, class = c("integer", "numeric"))
+        Trunc <- trunc
+    } else {
+        if("character" %in% class(trunc)){
+            inclusion(names(data), "names of data", include = trunc)
+            Trunc <- data[[trunc]]
+        } else {
+            Trunc <- rep(trunc, n)
+        }
+    }
+    properties(Trunc, class = c("integer", "numeric"),
+               length = n, na.ok = FALSE)
+    if(any(Trunc < 0)) warning("There are negative truncation points")
     properties(id, class = c("NULL", "character"), length = 0:1, na.ok = FALSE)
     properties(strip, class = "logical", length = 1, na.ok = FALSE)
     if(is.character(id)) inclusion(names(data), nm = "data names", include = id)
@@ -112,7 +130,7 @@ truncate_surv <- function(surv = NULL, data, trunc, id = NULL, strip = TRUE){
     for(i in seq_along(stab$time)){
         eval(expr = substitute(
             expr = data[, c(foo_ch, bar_ch) := {
-                .(pmin(foo, trunc), fifelse(bar == 1 & foo <= trunc, 1L, 0L))
+                .(pmin(foo, Trunc), fifelse(bar == 1 & foo <= Trunc, 1L, 0L))
             }],
             env = list(foo_ch = stab$time[i],
                        foo = as.name(stab$time[i]),
@@ -126,6 +144,37 @@ truncate_surv <- function(surv = NULL, data, trunc, id = NULL, strip = TRUE){
     } else data
     if(return_dt) r else as.data.frame(r)
 }
+
+## truncate_surv <- function(surv = NULL, data, trunc, id = NULL, strip = TRUE){
+##     properties(surv, class = c("NULL", "character", "data.frame"))
+##     properties(data, class = "data.frame")
+##     properties(trunc, class = c("numeric", "integer"), length = 1, na.ok = FALSE)
+##     properties(id, class = c("NULL", "character"), length = 0:1, na.ok = FALSE)
+##     properties(strip, class = "logical", length = 1, na.ok = FALSE)
+##     if(is.character(id)) inclusion(names(data), nm = "data names", include = id)
+##     if(is.null(surv)) surv <- extract_stab_from_names(names(data))
+##     if(is.character(surv)) surv <- create_stab(s = surv)
+##     stab <- verify_stab(stab = surv, nm = names(data))
+##     return_dt <- return_data.table(is.data.table(data))
+##     data <- as.data.table(data)
+##     for(i in seq_along(stab$time)){
+##         eval(expr = substitute(
+##             expr = data[, c(foo_ch, bar_ch) := {
+##                 .(pmin(foo, trunc), fifelse(bar == 1 & foo <= trunc, 1L, 0L))
+##             }],
+##             env = list(foo_ch = stab$time[i],
+##                        foo = as.name(stab$time[i]),
+##                        bar_ch = stab$event[i],
+##                        bar = as.name(stab$event[i]))
+##         ))
+##     }
+##     r <- if(strip){
+##         vs <- c(id, shuffle(stab$time, stab$event))
+##         data[, vs, with = FALSE]
+##     } else data
+##     if(return_dt) r else as.data.frame(r)
+## }
+
 
 ##' @rdname transform_surv
 ##' @details Survclass_surv: create variables of class 'Surv'

@@ -81,6 +81,6 @@ match_weight <- function(tr, cl, id, data = NULL, trv = 1){
         for(K in setdiff(names(E), names(Dna))){
             Dna[[K]] <- NA
         }
-    }
-    rbind(E, Dna, make.row.names = FALSE)
+        rbind(E, Dna, make.row.names = FALSE)
+    } else E
 }

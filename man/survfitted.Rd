@@ -7,6 +7,7 @@
 survfitted(
   formula,
   data,
+  weights = NULL,
   ...,
   time.unit = 1L,
   keep.factors = TRUE,
@@ -19,16 +20,20 @@ survfitted(
 
 \item{data}{data passed}
 
+\item{weights}{character; name of variable in data that should acts as
+weights}
+
 \item{...}{other arguments passed}
 
 \item{time.unit}{numerical; scale for time, e.g. set to 365.25 to convert
-from days o years}
+from days to years}
 
 \item{keep.factors}{logical; keep factors in formula as factors in the
 output}
 
-\item{tp}{numerical vector; the time points (tp) for which to calculate at risk
-numbers. These will be attached as attribute 'at_risk' to the output.}
+\item{tp}{numerical vector; the time points (tp) for which to calculate at
+risk numbers. These will be attached as attribute 'at_risk' to the
+output.}
 
 \item{t0}{logical, if TRUE \code{survfit0} will be applied}
 }

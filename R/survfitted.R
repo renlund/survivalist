@@ -5,20 +5,31 @@
 ##' calculate numbers at risk.
 ##' @param formula formula passed (to survival::survfit.formula)
 ##' @param data data passed
+##' @param weights character; name of variable in data that should acts as
+##'     weights
 ##' @param ... other arguments passed
 ##' @param time.unit numerical; scale for time, e.g. set to 365.25 to convert
-##'     from days o years
+##'     from days to years
 ##' @param keep.factors logical; keep factors in formula as factors in the
 ##'     output
-##' @param tp numerical vector; the time points (tp) for which to calculate at risk
-##'     numbers. These will be attached as attribute 'at_risk' to the output.
+##' @param tp numerical vector; the time points (tp) for which to calculate at
+##'     risk numbers. These will be attached as attribute 'at_risk' to the
+##'     output.
 ##' @param t0 logical, if TRUE \code{survfit0} will be applied
 ##' @return a data frame
 ##' @export
-survfitted <- function(formula, data, ..., time.unit = 1L,
+survfitted <- function(formula, data, weights = NULL, ..., time.unit = 1L,
                        keep.factors = TRUE, tp = NULL, t0 = TRUE){
     properties(formula, nm = "The formula", class = "formula")
     properties(data, class = "data.frame")
+    w_given <- !is.null(weights)
+    if(w_given){
+        properties(weights, class = "character", length = 1, na.ok = FALSE)
+        inclusion(names(data), nm = "names of data", include = weights)
+        W <- data[[weights]]
+        if(any(is.na(W))) warning("there are missing weights")
+        if(any(W < 0, na.rm = TRUE)) warning("there are negative weights")
+    }
     properties(keep.factors, class = "logical", length = 1, na.ok = FALSE)
     properties(time.unit, class = c("numeric", "integer"),
                length = 1, na.ok = FALSE)
@@ -36,6 +47,7 @@ survfitted <- function(formula, data, ..., time.unit = 1L,
     dots <- list(...) ## dots <- as.list(NULL)
     dots$formula <- formula
     dots$data <- data
+    if(w_given) dots$weights <- W
     tmp_sf <- do.call(what = survival::survfit.formula, args = dots)
     sf <- if(t0) survival::survfit0(tmp_sf) else tmp_sf
     x <- sf$strata
@@ -174,31 +186,5 @@ if(FALSE){
     sf <- survfit(formula = f, data = d)
     survfit2df(sf)
 
-    ## survfitted(formula = y ~ time + estimate, data = d)
-
-    formula = f
-    keep.factors = TRUE
-    data = d
-    ls()
-    rm(f,v,d,sf)
-
-    str(survfitted(formula = f, data = d))
-    str(survfitted(formula = f, data = d, keep.factors = FALSE))
-    str(test <- survfitted(formula = f, data = d, tp = c(0,400, 800)))
-    attr(test, "at_risk")
-    test <- survfitted(formula = f, data = d, time.unit = 365.25,
-                           tp = c(0,2.5, 5, 7.5, 10))
-    attr(test, "at_risk")
-
-    test <- survfitted(formula = Surv(rfstime, status) ~ grade,
-                       data = d, time.unit = 365.25,
-                       tp = c(0,2.5, 5, 7.5, 10))
-    attr(test, "at_risk")
-
-
-
-
-    str(survfitted(formula = f, data = d, weights = v))
-    str(survfitted(formula = f, data = d, weights = d$vikt))
 
 }
